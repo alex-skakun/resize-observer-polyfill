@@ -15,7 +15,8 @@ class ResizeWatcher {
     private requestID:  number;
     private concatMap = new Map<Element | SVGElement, ElementDataWithInstance>();
 
-    watchElements = (targets: Map<Element | SVGElement, ElementDataWithInstance>) => {
+    watchElements = () => {
+        console.log(this.concatMap.size)
         if (!this.concatMap.size) {
             return;
         }
@@ -23,7 +24,7 @@ class ResizeWatcher {
         let currentRects = new Map<Element | SVGElement, PrevCurrentClientRect>(),
             instancesMap = new Map<ResizeObserver, Array<ElementRect>>();
 
-        targets.forEach((value, key) => {
+        this.concatMap.forEach((value, key) => {
             currentRects.set(key, {
                 current: key.getBoundingClientRect(),
                 prev: value.rect,
@@ -33,13 +34,28 @@ class ResizeWatcher {
 
         currentRects.forEach((value, element) => {
             if (value.current.width !== value.prev.width || value.current.height !== value.prev.height) {
-                instancesMap.set(value.instance, [
-                    ...instancesMap.get(value.instance),
-                    {
-                        element,
-                        rect: value.current
-                    }
-                ]);
+                const instanceElements = instancesMap.get(value.instance);
+                if (instanceElements) {
+                    instancesMap.set(value.instance, [
+                        ...instanceElements,
+                        {
+                            element,
+                            rect: value.current
+                        }
+                    ]);
+                } else {
+                    instancesMap.set(value.instance, [
+                        {
+                            element,
+                            rect: value.current
+                        }
+                    ]);
+                }
+
+                this.concatMap.set(element, {
+                    ...this.concatMap.get(element),
+                    rect: value.current
+                })
             }
         });
 
@@ -47,7 +63,7 @@ class ResizeWatcher {
             instance.applyChanges(elementRects);
         });
 
-        this.requestID = requestAnimationFrame(() => this.watchElements(targets));
+        this.requestID = requestAnimationFrame(this.watchElements);
     };
 
     start (instances: Map<ResizeObserver, Map<Element | SVGElement, ElementData>>): void {
@@ -62,7 +78,9 @@ class ResizeWatcher {
             });
         });
 
-        this.requestID = requestAnimationFrame(() => this.watchElements(this.concatMap));
+        console.log(this.concatMap)
+
+        this.requestID = requestAnimationFrame(this.watchElements);
     }
 
     stop (): void {
