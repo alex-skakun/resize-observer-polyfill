@@ -1,3 +1,5 @@
+import ResizeObserver from "./resize-observer";
+
 export interface BoxSize {
     blockSize: number;
     inlineSize: number;
@@ -14,12 +16,18 @@ export interface ResizeObserverOptions {
     box: 'content-box' | 'border-box';
 }
 
-export interface ElementData {
-    options: ResizeObserverOptions;
-    rect: ClientRect;
+export interface Dimension {
+    borderWidth: number;
+    borderHeight: number;
+    contentHeight: number;
+    contentWidth: number;
 }
 
-export interface ElementRect {
-    element: Element | SVGElement;
-    rect: ClientRect;
+export interface ElementData {
+    dimensionPrevious: Dimension,
+    dimensionCurrent: Dimension,
+    bounding: DOMRectReadOnly;
+    instance: ResizeObserver;
+    computedStyles: CSSStyleDeclaration;
+    options: ResizeObserverOptions;
 }

@@ -4,70 +4,87 @@ if (!('ResizeObserverCustom' in globalThis)) {
     globalThis.ResizeObserverCustom = ResizeObserver;
 }
 
+let count = 0;
+
+const   example = document.getElementById('performance-example'),
+        divs = document.querySelectorAll('#performance-example div'),
+        display = document.querySelector('.display');
+
 const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    console.log('a-------------');
-    console.log(entries);
+    // console.log('a-------------');
+    // console.log(entries);
+    count += entries.length;
+    display.innerHTML = `${count}`;
 });
 
-const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    console.log('b-------------');
-    console.log(entries);
-});
+// const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
+//     console.log('b-------------');
+//     console.log(entries);
+// });
 
-const divsA = document.querySelectorAll('.a'),
-    divsB = document.querySelectorAll('.b');
 
-divsA.forEach(div => {
+divs.forEach(div => {
     a.observe(div);
 });
 
-setInterval(() => {
-    let start: number;
-    divsA.forEach((div: HTMLElement) => {
-        let height = parseInt(div.style.height);
-        if (!height || height === 50) {
-            start = 30;
-        } else {
-            start = 50;
-        }
+example.addEventListener('click', () => {
+    example.classList.toggle('animate');
+})
+
+// const divsA = document.querySelectorAll('.a'),
+//     divsB = document.querySelectorAll('.b');
+
+// divsA.forEach(div => {
+//     a.observe(div);
+// });
+
+// setInterval(() => {
+//     let start: number;
+//     divsA.forEach((div: HTMLElement) => {
+//         let height = parseInt(div.style.height);
+//         if (!height || height === 50) {
+//             start = 30;
+//         } else {
+//             start = 50;
+//         }
     
         
-        div.style.height = `${start}px`;
-    });
-}, 5000);
+//         div.style.height = `${start}px`;
+//     });
+// }, 5000);
 
-setTimeout(() => {
-    const element = document.querySelector('.a');
+// setTimeout(() => {
+//     const element = document.querySelector('.a');
 
-    a.unobserve(element);
-}, 9000);
+//     a.unobserve(element);
+// }, 9000);
 
 
-setTimeout(() => {
-    divsB.forEach(div => {
-        b.observe(div);
-    });
+// setTimeout(() => {
+//     divsB.forEach(div => {
+//         b.observe(div);
+//     });
 
-    setInterval(() => {
-        let start: number;
-        divsB.forEach((div: HTMLElement) => {
-            let height = parseInt(div.style.height);
-            if (!height || height === 50) {
-                start = 30;
-            } else {
-                start = 50;
-            }
+//     setInterval(() => {
+//         let start: number;
+//         divsB.forEach((div: HTMLElement) => {
+//             let height = parseInt(div.style.height);
+//             if (!height || height === 50) {
+//                 start = 30;
+//             } else {
+//                 start = 50;
+//             }
         
             
-            div.style.height = `${start}px`;
-        });
-    }, 3000);
-}, 6000)
+//             div.style.height = `${start}px`;
+//         });
+//     }, 3000);
+// }, 6000)
 
-setTimeout(() => {
-    b.disconnect();
-}, 30000);
+// setTimeout(() => {
+//     b.disconnect();
+// }, 30000);
 
-setTimeout(() => {
-    a.disconnect();
-}, 31000);
+// setTimeout(() => {
+//     a.disconnect();
+// }, 31000);

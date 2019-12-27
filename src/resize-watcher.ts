@@ -1,22 +1,11 @@
 import ResizeObserver from "./resize-observer";
-import { ElementData, ElementRect } from "./interfaces";
-
-interface PrevCurrentClientRect {
-    prev: ClientRect;
-    current: ClientRect;
-    instance: ResizeObserver;
-}
-
-interface ElementDataWithInstance extends ElementData {
-    instance: ResizeObserver;
-}
+import { ElementData, ResizeObserverOptions, ResizeObserverEntry, BoxSize, Dimension } from "./interfaces";
 
 class ResizeWatcher {
     private requestID: number;
-    private concatMap = new Map<Element | SVGElement, ElementDataWithInstance>();
+    private map = new Map<Element | SVGElement, ElementData>();
     private watchElements = () => {
-        console.log(this.concatMap.size)
-        if (!this.concatMap.size) {
+        if (!this.map.size) {
             return;
         }
         
@@ -27,7 +16,6 @@ class ResizeWatcher {
 
     start (): void {
         this.stop();
-        console.log(this.concatMap)
 
         this.requestID = requestAnimationFrame(this.watchElements);
     }
@@ -38,69 +26,152 @@ class ResizeWatcher {
         }
     }
 
-    addElementsToMap (instances: Map<ResizeObserver, Map<Element | SVGElement, ElementData>>): void {
-        instances.forEach((instanceValue, instanceKey) => {
-            instanceValue.forEach((elementValue, elementKey) => {
-                this.concatMap.set(elementKey, {
-                    ...elementValue,
-                    instance: instanceKey
-                });
-            });
-        });
+    addElementToMap (element: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): void {
+        if (this.map.get(element)) {
+            return;
+        }
+
+        this.map.set(element, this.getElementData(element, options, instance));
     }
 
     removeElementFromInstance (element: Element | SVGElement): void {
-        this.concatMap.forEach((value, key) => {
+        this.map.forEach((value, key) => {
             if (element === key) {
-                this.concatMap.delete(key);
+                this.map.delete(key);
             }
         }); 
     }
 
     removeInstance (instance: ResizeObserver): void {
-        this.concatMap.forEach((value, key) => {
+        this.map.forEach((value, key) => {
             if (instance === value.instance) {
-                this.concatMap.delete(key);
+                this.map.delete(key);
             }
         });
     }
 
-    private checkForUpdate (): void {
-        let currentRects = new Map<Element | SVGElement, PrevCurrentClientRect>(),
-            instancesMap = new Map<ResizeObserver, Array<ElementRect>>();
+    getElementData (target: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): ElementData {
+        let bounding = target.getBoundingClientRect(),
+            computedStyles = getComputedStyle(target);
+        return {
+            dimensionPrevious: <Dimension>{},
+            dimensionCurrent: {
+                borderHeight: bounding.height,
+                borderWidth: bounding.width,
+                contentHeight: bounding.height - this.getSumOfProperties(['paddingTop', 'paddingBottom', 'borderTop', 'borderBottom'], computedStyles),
+                contentWidth: bounding.width - this.getSumOfProperties(['paddingLeft', 'paddingRight', 'borderLeft', 'borderRight'], computedStyles)
+            },
+            bounding,
+            options,
+            instance,
+            computedStyles 
+        };
+    }
 
-        this.concatMap.forEach((value, key) => {
+    getTargetEntry (target: Element | SVGElement, { bounding, computedStyles, options }: ElementData): ResizeObserverEntry {
+        let borderBoxSize: BoxSize, contentBoxSize: BoxSize, contentRect: DOMRectReadOnly;
+
+        borderBoxSize = {
+            blockSize: bounding.height,
+            inlineSize: bounding.width
+        };
+
+        contentBoxSize = {
+            blockSize: bounding.height - this.getSumOfProperties(['paddingTop', 'paddingBottom', 'borderTop', 'borderBottom'], computedStyles),
+            inlineSize: bounding.width - this.getSumOfProperties(['paddingLeft', 'paddingRight', 'borderLeft', 'borderRight'], computedStyles),
+        };
+
+        if (options.box === 'border-box') {
+            contentRect = bounding;
+        } else {
+            let left = bounding.left - this.getSumOfProperties(['paddingLeft', 'borderLeft'], computedStyles),
+                top = bounding.top - this.getSumOfProperties(['paddingTop', 'borderTop'], computedStyles);
+
+            contentRect = {
+                bottom: bounding.bottom - this.getSumOfProperties(['paddingBottom', 'borderBottom'], computedStyles),
+                height: contentBoxSize.blockSize,
+                left,
+                right: bounding.right - this.getSumOfProperties(['paddingRight', 'borderRight'], computedStyles),
+                top,
+                width: contentBoxSize.inlineSize,
+                x: left,
+                y: top,
+                toJSON: () => JSON.stringify(this)
+            };
+        }
+
+        return  {
+            target,
+            contentRect,
+            borderBoxSize,
+            contentBoxSize
+        };
+    }
+
+    private getSumOfProperties (properties: Array<string>, computedStyles: CSSStyleDeclaration): number {
+        let sum = 0;
+        properties.forEach(property => {
+            sum += parseFloat(computedStyles[property]);
+        });
+        return sum;
+    }
+
+    private checkForUpdate (): void {
+        let currentRects = new Map<Element | SVGElement, ElementData>(),
+            instancesMap = new Map<ResizeObserver, Array<ResizeObserverEntry>>();
+
+        this.map.forEach((value, key) => {
             currentRects.set(key, {
-                current: key.getBoundingClientRect(),
-                prev: value.rect,
-                instance: value.instance
+                bounding: key.getBoundingClientRect(),
+                instance: value.instance,
+                computedStyles: getComputedStyle(key),
+                options: value.options,
+                dimensionPrevious: value.dimensionPrevious,
+                dimensionCurrent:  value.dimensionCurrent
             });
         });
 
-        currentRects.forEach((value, element) => {
-            if (value.current.width !== value.prev.width || value.current.height !== value.prev.height) {
-                const instanceElements = instancesMap.get(value.instance);
-                if (instanceElements) {
-                    instancesMap.set(value.instance, [
-                        ...instanceElements,
-                        {
-                            element,
-                            rect: value.current
-                        }
-                    ]);
-                } else {
-                    instancesMap.set(value.instance, [
-                        {
-                            element,
-                            rect: value.current
-                        }
-                    ]);
-                }
+        currentRects.forEach((value, target) => {
+            value.dimensionPrevious = value.dimensionCurrent;
+            value.dimensionCurrent = {
+                borderHeight: value.bounding.height,
+                borderWidth: value.bounding.width,
+                contentHeight: value.bounding.height - this.getSumOfProperties(['paddingTop', 'paddingBottom', 'borderTop', 'borderBottom'], value.computedStyles),
+                contentWidth: value.bounding.width - this.getSumOfProperties(['paddingLeft', 'paddingRight', 'borderLeft', 'borderRight'], value.computedStyles)
+            }
 
-                this.concatMap.set(element, {
-                    ...this.concatMap.get(element),
-                    rect: value.current
-                })
+            if (
+                (
+                    value.options.box === 'border-box'
+                    && (
+                        value.dimensionPrevious.borderWidth !== value.dimensionCurrent.borderWidth
+                        || value.dimensionPrevious.borderHeight !== value.dimensionCurrent.borderHeight
+                    )
+                )
+                || 
+                (
+                    value.options.box === 'content-box'
+                    && (
+                        value.dimensionPrevious.contentWidth !== value.dimensionCurrent.contentWidth
+                        || value.dimensionPrevious.contentHeight !== value.dimensionCurrent.contentHeight
+                    )
+                )
+            ) {
+                let instanceData = instancesMap.get(value.instance),
+                    instanceElements = instanceData ? instanceData : [];
+
+                instancesMap.set(value.instance, [
+                    ...instanceElements,
+                    this.getTargetEntry(target, value)
+                ]);
+
+                this.map.set(target, {
+                    ...this.map.get(target),
+                    bounding: value.bounding,
+                    computedStyles: value.computedStyles,
+                    dimensionCurrent: value.dimensionCurrent,
+                    dimensionPrevious: value.dimensionPrevious
+                });
             }
         });
 

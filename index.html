@@ -15,10 +15,73 @@
             height: 50px;
             background-color: blue;
         }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #performance-example.animate {
+            animation-play-state: running;
+        }
+
+        #performance-example {
+            display: flex;
+            flex-flow: row wrap;
+            animation: squeeze-in-out 1s infinite alternate;
+            animation-play-state: paused;
+            width: 100%;
+            margin: 0;
+            font-size: 50%;
+            cursor: pointer;
+        }
+
+        #performance-example div, [resize] {
+            min-width: 100px;
+            min-height: 100px;
+            height: 100px;
+            position: relative;
+            white-space: nowrap;
+            background: #f35;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            user-select: none;
+            box-sizing: border-box;
+            background-clip: content-box;
+            border: 0 solid rgba(0,0,0,.2);
+            cursor: pointer;
+        }
+
+        #performance-example div {
+            margin: 2px;
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 10px;
+            width: calc(5% - 4px);
+            height: auto;
+        }
+
+        @keyframes squeeze-in-out {
+            100% {
+                width: 50%;
+            }
+        }
+        .display {
+            width: 300px;
+            text-align: center;
+            background-color: black;
+            color: white;
+            padding: 20px;
+        }
+
     </style>
 </head>
 <body>
-    <div class="a"></div>
+        <div class="display"></div>
+    <!-- <div class="a"></div>
     <div class="a"></div>
     <div class="a"></div>
     <div class="a"></div>
@@ -129,7 +192,8 @@
     <div class="b"></div>
     <div class="b"></div>
     <div class="b"></div>
-    <div class="b"></div>
+    <div class="b"></div> -->
+    <div id="performance-example" animate=""><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
     <script src="./dist/bundle.js"></script>
 </body>
 </html>
