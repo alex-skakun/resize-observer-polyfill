@@ -19,7 +19,8 @@ export default class ResizeObserver {
 
         const instanceElementsMap = new Map();
         instanceElementsMap.set(this, this.targets);
-        resizeWatcher.start(instanceElementsMap);
+        resizeWatcher.addElementsToMap(instanceElementsMap);
+        resizeWatcher.start();
     }
 
     unobserve (target: Element | SVGElement): void {

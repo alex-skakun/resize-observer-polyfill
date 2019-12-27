@@ -12,15 +12,60 @@ interface ElementDataWithInstance extends ElementData {
 }
 
 class ResizeWatcher {
-    private requestID:  number;
+    private requestID: number;
     private concatMap = new Map<Element | SVGElement, ElementDataWithInstance>();
-
-    watchElements = () => {
+    private watchElements = () => {
         console.log(this.concatMap.size)
         if (!this.concatMap.size) {
             return;
         }
         
+        this.checkForUpdate();
+
+        this.requestID = requestAnimationFrame(this.watchElements);
+    };
+
+    start (): void {
+        this.stop();
+        console.log(this.concatMap)
+
+        this.requestID = requestAnimationFrame(this.watchElements);
+    }
+
+    stop (): void {
+        if (this.requestID) {
+            cancelAnimationFrame(this.requestID);
+        }
+    }
+
+    addElementsToMap (instances: Map<ResizeObserver, Map<Element | SVGElement, ElementData>>): void {
+        instances.forEach((instanceValue, instanceKey) => {
+            instanceValue.forEach((elementValue, elementKey) => {
+                this.concatMap.set(elementKey, {
+                    ...elementValue,
+                    instance: instanceKey
+                });
+            });
+        });
+    }
+
+    removeElementFromInstance (element: Element | SVGElement): void {
+        this.concatMap.forEach((value, key) => {
+            if (element === key) {
+                this.concatMap.delete(key);
+            }
+        }); 
+    }
+
+    removeInstance (instance: ResizeObserver): void {
+        this.concatMap.forEach((value, key) => {
+            if (instance === value.instance) {
+                this.concatMap.delete(key);
+            }
+        });
+    }
+
+    private checkForUpdate (): void {
         let currentRects = new Map<Element | SVGElement, PrevCurrentClientRect>(),
             instancesMap = new Map<ResizeObserver, Array<ElementRect>>();
 
@@ -61,47 +106,6 @@ class ResizeWatcher {
 
         instancesMap.forEach((elementRects, instance) => {
             instance.applyChanges(elementRects);
-        });
-
-        this.requestID = requestAnimationFrame(this.watchElements);
-    };
-
-    start (instances: Map<ResizeObserver, Map<Element | SVGElement, ElementData>>): void {
-        this.stop();
-
-        instances.forEach((instanceValue, instanceKey) => {
-            instanceValue.forEach((elementValue, elementKey) => {
-                this.concatMap.set(elementKey, {
-                    ...elementValue,
-                    instance: instanceKey
-                });
-            });
-        });
-
-        console.log(this.concatMap)
-
-        this.requestID = requestAnimationFrame(this.watchElements);
-    }
-
-    stop (): void {
-        if (this.requestID) {
-            cancelAnimationFrame(this.requestID);
-        }
-    }
-
-    removeElementFromInstance (element: Element | SVGElement): void {
-        this.concatMap.forEach((value, key) => {
-            if (element === key) {
-                this.concatMap.delete(key);
-            }
-        }); 
-    }
-
-    removeInstance (instance: ResizeObserver): void {
-        this.concatMap.forEach((value, key) => {
-            if (instance === value.instance) {
-                this.concatMap.delete(key);
-            }
         });
     }
 
