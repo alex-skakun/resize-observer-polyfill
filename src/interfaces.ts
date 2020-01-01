@@ -31,3 +31,7 @@ export interface ElementData {
     computedStyles: CSSStyleDeclaration;
     options: ResizeObserverOptions;
 }
+
+export interface AnimationState {
+    animationPlaying: boolean;
+}

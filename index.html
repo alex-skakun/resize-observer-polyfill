@@ -37,6 +37,11 @@
             padding: 10px;
             box-sizing: border-box;
             animation: test 1s ease infinite alternate;
+            animation-play-state: paused;
+        }
+
+        #test.animating {
+            animation-play-state: running;
         }
 
         #test > div {
@@ -118,7 +123,7 @@
     </style>
 </head>
 <body>
-<div id="test">
+<div id="test" class="">
     <div></div>
     <div></div>
     <div></div>

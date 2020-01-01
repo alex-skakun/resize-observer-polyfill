@@ -10,7 +10,6 @@ export default class ResizeObserver {
 
     observe (target: Element | SVGElement, options: ResizeObserverOptions = getDefaultOptions()): void {
         resizeWatcher.addElementToMap(target, options, this);
-        resizeWatcher.start();
     }
 
     unobserve (target: Element | SVGElement): void {

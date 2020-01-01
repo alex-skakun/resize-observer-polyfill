@@ -1,18 +1,44 @@
 import ResizeObserver from "./resize-observer";
-import { ElementData, ResizeObserverOptions, ResizeObserverEntry, BoxSize, Dimension } from "./interfaces";
+import { ElementData, ResizeObserverOptions, ResizeObserverEntry, BoxSize, Dimension, AnimationState } from "./interfaces";
+
+const EVENTS_FOR_CHECK_RESIZE = [
+    'load',
+    'transitionend',
+    'animationend',
+    'mousemove',
+    'animationcancel',
+    'transitioncancel'
+];
+
+const EVENTS_FOR_START_REQUEST_ANIMATION_FRAME = [
+    'transitionstart',
+    'animationstart',
+    'animationiteration'
+];
 
 class ResizeWatcher {
     private requestID: number;
     private map = new Map<Element | SVGElement, ElementData>();
-    private watchElements = () => {
+    private mapAnimationElements = new Map<Element, AnimationState>();
+    private isAnimating = false;
+    private watchElements = (nowTime: number) => {
         if (!this.map.size) {
             return;
         }
+
+        console.log('here')
         
-        this.checkForUpdate();
+        this.checkForUpdate(nowTime);
 
         this.requestID = requestAnimationFrame(this.watchElements);
     };
+
+    constructor () {
+        this.initializeMutationObserver();
+        this.initializeCheckForUpdateListeners();
+        this.inititalizeRequestListeners();
+        this.setAnimationElementsMap();
+    }
 
     start (): void {
         this.stop();
@@ -116,18 +142,15 @@ class ResizeWatcher {
         return sum;
     }
 
-    private checkForUpdate (): void {
+    private checkForUpdate (nowTime?: number): void {
         let currentRects = new Map<Element | SVGElement, ElementData>(),
             instancesMap = new Map<ResizeObserver, Array<ResizeObserverEntry>>();
 
         this.map.forEach((value, key) => {
             currentRects.set(key, {
+                ...value,
                 bounding: key.getBoundingClientRect(),
-                instance: value.instance,
                 computedStyles: getComputedStyle(key),
-                options: value.options,
-                dimensionPrevious: value.dimensionPrevious,
-                dimensionCurrent:  value.dimensionCurrent
             });
         });
 
@@ -167,16 +190,110 @@ class ResizeWatcher {
 
                 this.map.set(target, {
                     ...this.map.get(target),
-                    bounding: value.bounding,
-                    computedStyles: value.computedStyles,
-                    dimensionCurrent: value.dimensionCurrent,
-                    dimensionPrevious: value.dimensionPrevious
+                    ...value
                 });
             }
         });
 
+        console.log(instancesMap)
+        this.isAnimating = !!instancesMap.size;
+
         instancesMap.forEach((elementRects, instance) => {
             instance.applyChanges(elementRects);
+        });
+    }
+
+    private setAnimationElementsMap (): void {
+        const { styleSheets } = document;
+
+        for (let styleSheet of styleSheets) {
+            console.log(styleSheet)
+            for (let cssRule of (styleSheet as any).cssRules) {
+                let { selectorText, style } = cssRule;
+                if (!style) {
+                    continue;
+                }
+
+                const element = document.querySelector(selectorText);
+
+                if (style.animation && !this.mapAnimationElements.get(element)) {
+                    this.mapAnimationElements.set(element, {
+                        animationPlaying: style.animationPlayState === 'running'
+                    });
+                }
+            }
+        }
+    }
+
+    private initializeMutationObserver (): void {
+        const config = {
+            attributes: true,
+            childList: true,
+            subtree: true,
+            characterData: true
+        };
+
+        const callback = (mutationsList: Array<MutationRecord>) =>  {
+
+            let isAnimationTargetExist = false;
+            let isAnimating = mutationsList.some(mutation => {
+                if (this.mapAnimationElements.get(mutation.target as Element)) {
+                    const computedStyle = getComputedStyle((mutation.target as HTMLElement));
+                    isAnimationTargetExist = true;
+                    return computedStyle.animationPlayState === 'running';
+                }
+
+                return false;
+            });
+
+            if (isAnimating && isAnimationTargetExist) {
+                this.isAnimating = true;
+                this.start();
+            }
+            
+            if (!isAnimating && isAnimationTargetExist) {
+                this.isAnimating = false;
+                this.stop();
+            }
+
+            console.log(mutationsList)
+            if (!this.isAnimating) {
+                this.checkForUpdate();
+            }
+        };
+
+        const observer = new MutationObserver(callback);
+
+        observer.observe(document, config);
+    }
+
+    private inititalizeRequestListeners (): void {
+        EVENTS_FOR_START_REQUEST_ANIMATION_FRAME.forEach(eventName => {
+            document.addEventListener(eventName, () => {
+                if (!this.isAnimating) {
+                    this.isAnimating = true;
+                    this.start();
+                }
+                console.log(eventName)
+            });
+        });
+    }
+
+    private initializeCheckForUpdateListeners (): void {
+        EVENTS_FOR_CHECK_RESIZE.forEach(eventName => {
+            document.addEventListener(eventName, () => {
+                if (eventName === 'transitionend' || eventName === 'animationend') {
+                    this.stop();
+                    this.isAnimating = false;
+                }
+
+                if (this.isAnimating) {
+                    return;
+                }
+                
+                console.log(eventName)
+                this.checkForUpdate();
+            });
         });
     }
 

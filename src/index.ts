@@ -6,7 +6,8 @@ if (!('ResizeObserverCustom' in globalThis)) {
 
 let count = 0;
 
-const   divs = document.querySelectorAll('#test div'),
+const   test = document.getElementById('test'),
+        divs = document.querySelectorAll('#test div'),
         display = document.getElementById('output');
 
 const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
@@ -18,3 +19,7 @@ const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
 divs.forEach(div => {
     a.observe(div);
 });
+
+test.addEventListener('click', () => {
+    test.classList.toggle('animating');
+})
