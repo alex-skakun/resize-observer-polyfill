@@ -120,6 +120,19 @@
             padding: 20px;
         }
 
+        #line {
+            width: 100px;
+            height: 30px;
+            background-color: rebeccapurple;
+            transition: padding 20s ease;
+            padding: 10px;
+            box-sizing: content-box;
+        }
+
+        #line.grow {
+            padding: 30px;
+        }
+
     </style>
 </head>
 <body>
@@ -226,5 +239,6 @@
     <div></div>
 </div>
 <div id="output"></div>
+<div id="line"></div>
 </body>
 </html>

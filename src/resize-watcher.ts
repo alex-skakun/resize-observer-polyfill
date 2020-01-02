@@ -21,14 +21,13 @@ class ResizeWatcher {
     private map = new Map<Element | SVGElement, ElementData>();
     private mapAnimationElements = new Map<Element, AnimationState>();
     private isAnimating = false;
-    private watchElements = (nowTime: number) => {
+    private isTransitioning = false;
+    private watchElements = () => {
         if (!this.map.size) {
             return;
         }
-
-        console.log('here')
         
-        this.checkForUpdate(nowTime);
+        this.checkForUpdate();
 
         this.requestID = requestAnimationFrame(this.watchElements);
     };
@@ -79,6 +78,7 @@ class ResizeWatcher {
     getElementData (target: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): ElementData {
         let bounding = target.getBoundingClientRect(),
             computedStyles = getComputedStyle(target);
+
         return {
             dimensionPrevious: <Dimension>{},
             dimensionCurrent: {
@@ -95,7 +95,7 @@ class ResizeWatcher {
     }
 
     getTargetEntry (target: Element | SVGElement, { bounding, computedStyles, options }: ElementData): ResizeObserverEntry {
-        let borderBoxSize: BoxSize, contentBoxSize: BoxSize, contentRect: DOMRectReadOnly;
+        let borderBoxSize: BoxSize, contentBoxSize: BoxSize, contentRect: Partial<DOMRectReadOnly>;
 
         borderBoxSize = {
             blockSize: bounding.height,
@@ -121,8 +121,7 @@ class ResizeWatcher {
                 top,
                 width: contentBoxSize.inlineSize,
                 x: left,
-                y: top,
-                toJSON: () => JSON.stringify(this)
+                y: top
             };
         }
 
@@ -142,7 +141,7 @@ class ResizeWatcher {
         return sum;
     }
 
-    private checkForUpdate (nowTime?: number): void {
+    private checkForUpdate (): void {
         let currentRects = new Map<Element | SVGElement, ElementData>(),
             instancesMap = new Map<ResizeObserver, Array<ResizeObserverEntry>>();
 
@@ -194,9 +193,6 @@ class ResizeWatcher {
                 });
             }
         });
-
-        console.log(instancesMap)
-        this.isAnimating = !!instancesMap.size;
 
         instancesMap.forEach((elementRects, instance) => {
             instance.applyChanges(elementRects);
@@ -253,10 +249,13 @@ class ResizeWatcher {
             
             if (!isAnimating && isAnimationTargetExist) {
                 this.isAnimating = false;
-                this.stop();
+
+                if (!this.isTransitioning) {
+                    this.stop();
+                }
             }
 
-            console.log(mutationsList)
+            
             if (!this.isAnimating) {
                 this.checkForUpdate();
             }
@@ -270,11 +269,15 @@ class ResizeWatcher {
     private inititalizeRequestListeners (): void {
         EVENTS_FOR_START_REQUEST_ANIMATION_FRAME.forEach(eventName => {
             document.addEventListener(eventName, () => {
-                if (!this.isAnimating) {
-                    this.isAnimating = true;
-                    this.start();
+                if (eventName === 'transitionstart') {
+                    this.isTransitioning = true;
                 }
-                console.log(eventName)
+
+                if (eventName === 'animationstart') {
+                    this.isAnimating = true;
+                }
+
+                this.start();
             });
         });
     }
@@ -282,19 +285,27 @@ class ResizeWatcher {
     private initializeCheckForUpdateListeners (): void {
         EVENTS_FOR_CHECK_RESIZE.forEach(eventName => {
             document.addEventListener(eventName, () => {
-                if (eventName === 'transitionend' || eventName === 'animationend') {
-                    this.stop();
+                if (eventName === 'animationend') {
                     this.isAnimating = false;
                 }
 
-                if (this.isAnimating) {
+                if (eventName === 'transitionend') {
+                    this.isTransitioning = false;
+                }
+
+                if (!this.isTransitioning && !this.isAnimating) {
+                    this.stop();
+                }
+
+                if (this.isAnimating || this.isTransitioning) {
                     return;
                 }
                 
-                console.log(eventName)
                 this.checkForUpdate();
             });
         });
+
+        window.addEventListener('resize', this.checkForUpdate)
     }
 
 }

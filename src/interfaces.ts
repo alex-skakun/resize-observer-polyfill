@@ -8,7 +8,7 @@ export interface BoxSize {
 export interface ResizeObserverEntry {
     borderBoxSize: BoxSize;
     contentBoxSize: BoxSize;
-    contentRect: DOMRectReadOnly;
+    contentRect: Partial<DOMRectReadOnly>;
     target: Element | SVGElement;
 }
 
