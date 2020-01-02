@@ -12,8 +12,14 @@ const   test = document.getElementById('test'),
         line = document.getElementById('line');
 
 const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
+    // count += entries.length;
+    // display.innerHTML = `${count}`;
+    // console.log(entries)
+});
+
+const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
+    // count += entries.length;
+    // display.innerHTML = `${count}`;
     console.log(entries)
 });
 
@@ -22,7 +28,7 @@ divs.forEach(div => {
     a.observe(div);
 });
 
-a.observe(line, {
+b.observe(line, {
     box: 'border-box'
 })
 
@@ -31,3 +37,8 @@ test.addEventListener('click', () => {
 });
 
 line.classList.add('grow');
+
+setTimeout(() => {
+    const style = document.createElement('style');
+    document.head.append(style);
+}, 5000);

@@ -16,27 +16,62 @@ const EVENTS_FOR_START_REQUEST_ANIMATION_FRAME = [
     'animationiteration'
 ];
 
-class ResizeWatcher {
+let instance: ResizeWatcher;
+
+export class ResizeWatcher {
     private requestID: number;
     private map = new Map<Element | SVGElement, ElementData>();
     private mapAnimationElements = new Map<Element, AnimationState>();
     private isAnimating = false;
     private isTransitioning = false;
+    private isListenersInitialized = false;
+    private mutationObserver: MutationObserver;
     private watchElements = () => {
-        if (!this.map.size) {
-            return;
-        }
-        
         this.checkForUpdate();
 
         this.requestID = requestAnimationFrame(this.watchElements);
     };
+    private checkForUpdateListenersCb = ({ type: eventName }: Event) => {
+        if (eventName === 'animationend') {
+            this.isAnimating = false;
+        }
+
+        if (eventName === 'transitionend') {
+            this.isTransitioning = false;
+        }
+
+        if (!this.isTransitioning && !this.isAnimating) {
+            this.stop();
+        }
+
+        if (this.isAnimating || this.isTransitioning) {
+            return;
+        }
+        
+        this.checkForUpdate();
+    };
+    private requestListenersCb = ({ type: eventName }: Event) => {
+        if (eventName === 'transitionstart') {
+            this.isTransitioning = true;
+        }
+
+        if (eventName === 'animationstart') {
+            this.isAnimating = true;
+        }
+
+        this.start();
+    };
 
     constructor () {
-        this.initializeMutationObserver();
-        this.initializeCheckForUpdateListeners();
-        this.inititalizeRequestListeners();
-        this.setAnimationElementsMap();
+        if (instance) {
+            return instance;
+        }
+
+        console.log('here')
+        this.setAnimationElementsToMap();
+        instance = this;
+
+        return this;
     }
 
     start (): void {
@@ -52,6 +87,10 @@ class ResizeWatcher {
     }
 
     addElementToMap (element: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): void {
+        if (!this.isListenersInitialized) {
+            this.initAllListeners();
+        }
+
         if (this.map.get(element)) {
             return;
         }
@@ -64,7 +103,12 @@ class ResizeWatcher {
             if (element === key) {
                 this.map.delete(key);
             }
-        }); 
+        });
+
+        if (!this.map.size) {
+            this.stop();
+            this.destroyAllListeners();
+        }
     }
 
     removeInstance (instance: ResizeObserver): void {
@@ -73,6 +117,11 @@ class ResizeWatcher {
                 this.map.delete(key);
             }
         });
+
+        if (!this.map.size) {
+            this.stop();
+            this.destroyAllListeners();
+        }
     }
 
     getElementData (target: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): ElementData {
@@ -199,7 +248,7 @@ class ResizeWatcher {
         });
     }
 
-    private setAnimationElementsMap (): void {
+    private setAnimationElementsToMap (): void {
         const { styleSheets } = document;
 
         for (let styleSheet of styleSheets) {
@@ -212,7 +261,7 @@ class ResizeWatcher {
 
                 const element = document.querySelector(selectorText);
 
-                if (style.animation && !this.mapAnimationElements.get(element)) {
+                if (style.animation) {
                     this.mapAnimationElements.set(element, {
                         animationPlaying: style.animationPlayState === 'running'
                     });
@@ -230,6 +279,7 @@ class ResizeWatcher {
         };
 
         const callback = (mutationsList: Array<MutationRecord>) =>  {
+            console.log(mutationsList)
 
             let isAnimationTargetExist = false;
             let isAnimating = mutationsList.some(mutation => {
@@ -241,6 +291,14 @@ class ResizeWatcher {
 
                 return false;
             });
+
+            let isStyleNode = mutationsList.some(mutation => {
+                return [...mutation.addedNodes].some((node: Element) => node.localName === 'style');
+            });
+
+            if (isStyleNode) {
+                this.setAnimationElementsToMap();
+            }
 
             if (isAnimating && isAnimationTargetExist) {
                 this.isAnimating = true;
@@ -261,53 +319,51 @@ class ResizeWatcher {
             }
         };
 
-        const observer = new MutationObserver(callback);
+        this.mutationObserver = new MutationObserver(callback);
 
-        observer.observe(document, config);
+        this.mutationObserver.observe(document, config);
     }
 
     private inititalizeRequestListeners (): void {
         EVENTS_FOR_START_REQUEST_ANIMATION_FRAME.forEach(eventName => {
-            document.addEventListener(eventName, () => {
-                if (eventName === 'transitionstart') {
-                    this.isTransitioning = true;
-                }
-
-                if (eventName === 'animationstart') {
-                    this.isAnimating = true;
-                }
-
-                this.start();
-            });
+            document.addEventListener(eventName, this.requestListenersCb);
         });
     }
 
     private initializeCheckForUpdateListeners (): void {
         EVENTS_FOR_CHECK_RESIZE.forEach(eventName => {
-            document.addEventListener(eventName, () => {
-                if (eventName === 'animationend') {
-                    this.isAnimating = false;
-                }
-
-                if (eventName === 'transitionend') {
-                    this.isTransitioning = false;
-                }
-
-                if (!this.isTransitioning && !this.isAnimating) {
-                    this.stop();
-                }
-
-                if (this.isAnimating || this.isTransitioning) {
-                    return;
-                }
-                
-                this.checkForUpdate();
-            });
+            document.addEventListener(eventName, this.checkForUpdateListenersCb);
         });
 
         window.addEventListener('resize', this.checkForUpdate)
     }
 
-}
+    private removeRequestListeners (): void {
+        EVENTS_FOR_START_REQUEST_ANIMATION_FRAME.forEach(eventName => {
+            document.removeEventListener(eventName, this.requestListenersCb);
+        });
+    }
 
-export const resizeWatcher = new ResizeWatcher();
+    private removeCheckForUpdateListeners (): void {
+        EVENTS_FOR_CHECK_RESIZE.forEach(eventName => {
+            document.removeEventListener(eventName, this.checkForUpdateListenersCb);
+        });
+
+        window.removeEventListener('resize', this.checkForUpdate)
+    }
+
+    private initAllListeners (): void {
+        this.initializeMutationObserver();
+        this.initializeCheckForUpdateListeners();
+        this.inititalizeRequestListeners();
+        this.isListenersInitialized = true;
+    }
+
+    private destroyAllListeners (): void {
+        this.mutationObserver.disconnect();
+        this.removeCheckForUpdateListeners();
+        this.removeRequestListeners();
+        this.isListenersInitialized = false;
+    }
+
+}
