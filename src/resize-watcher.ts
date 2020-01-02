@@ -16,6 +16,41 @@ const EVENTS_FOR_START_REQUEST_ANIMATION_FRAME = [
     'animationiteration'
 ];
 
+const RESIZE_PROPERTIES_MAP = {
+    'width': true,
+    'max-width': true,
+    'min-width': true,
+    'height': true,
+    'max-height': true,
+    'min-height': true,
+    'padding': true,
+    'padding-right': true,
+    'padding-left': true,
+    'padding-bottom': true,
+    'padding-top': true,
+    'margin': true,
+    'margin-right': true,
+    'margin-left': true,
+    'margin-bottom': true,
+    'margin-top': true,
+    'transform': true,
+    'top': true,
+    'bottom': true,
+    'left': true,
+    'right': true,
+    'line-height': true,
+    'border': true,
+    'border-width': true,
+    'border-top': true,
+    'border-top-width': true,
+    'border-bottom': true,
+    'border-bottom-width': true,
+    'border-left': true,
+    'border-left-width': true,
+    'border-right': true,
+    'border-right-width': true,
+};
+
 let instance: ResizeWatcher;
 
 export class ResizeWatcher {
@@ -249,7 +284,10 @@ export class ResizeWatcher {
     }
 
     private setAnimationElementsToMap (): void {
-        const { styleSheets } = document;
+        const   { styleSheets } = document,
+                keyframesRules: Array<CSSKeyframesRule> = [],
+                animationsRules: Array<CSSStyleRule> = [],
+                ttransitionRules: Array<CSSStyleRule> = [];
 
         for (let styleSheet of styleSheets) {
             console.log(styleSheet)
@@ -268,6 +306,32 @@ export class ResizeWatcher {
                 }
             }
         }
+
+        for (let styleSheet of styleSheets) {
+            console.log(styleSheet)
+            for (let cssRule of (styleSheet as any).cssRules) {
+                if (cssRule instanceof CSSKeyframesRule) {
+                    keyframesRules.push(cssRule);
+                    continue;
+                }
+
+                let { style } = cssRule;
+
+                if (cssRule instanceof CSSStyleRule && style.animation) {
+                    animationsRules.push(cssRule);
+                }
+
+                if (cssRule instanceof CSSStyleRule && style.transition) {
+                    ttransitionRules.push(cssRule);
+                }
+            }
+        }
+
+        // TODO: think how to collect elements, that should run detect changes of the resize elements
+        for (let i = 0; i < keyframesRules.length; i++) {
+
+        }
+        
     }
 
     private initializeMutationObserver (): void {
