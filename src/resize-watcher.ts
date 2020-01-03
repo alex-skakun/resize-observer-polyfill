@@ -11,7 +11,8 @@ const EVENTS_FOR_CHECK_RESIZE = [
     'mousemove',
     'animationcancel',
     'transitioncancel',
-    'click'
+    'click',
+    'touchstart'
 ];
 
 
@@ -89,6 +90,22 @@ export class ResizeWatcher {
     private mapTransitionElements = new Map<Element, boolean>();
 
     /**
+     * Map, that contains all elements with hover, that have properties, that can change dimension of the element.
+     */
+    private mapHoverElements = new Map<Element, boolean>();
+
+    /**
+     * Map, that contains all elements with active or focus, that have properties, that can change dimension of the element.
+     */
+    private mapActiveFocusedElements = new Map<Element, boolean>();
+
+    /**
+     * Flag for active element.
+     */
+
+    private isElementFocused = false;
+
+    /**
      * Flag for animation.
      */
     private isAnimating = false;
@@ -118,7 +135,6 @@ export class ResizeWatcher {
 
         this.checkForUpdate();
 
-        console.log('here')
         this.requestID = requestAnimationFrame(this.watchElements);
     };
 
@@ -154,7 +170,30 @@ export class ResizeWatcher {
         console.log(eventName)
         
         // check for update only when all transitions and animations finished
-        this.checkForUpdate();
+        let isHoveredElementInTheMap = this.isElementExistInTheMap(target as Element, this.mapHoverElements);
+
+        if ((eventName === 'mousemove' || eventName === 'touchstart') && isHoveredElementInTheMap) {
+            this.checkForUpdate();
+            return;
+        }
+
+        let isFocusedElementInTheMap = this.isElementExistInTheMap(target as Element, this.mapActiveFocusedElements);
+
+        if (eventName === 'click' && isFocusedElementInTheMap) {
+            this.isElementFocused = true;
+            this.checkForUpdate();
+            return;
+        }
+
+        if (eventName === 'click' && this.isElementFocused && !isFocusedElementInTheMap) {
+            this.isElementFocused = false;
+            this.checkForUpdate();
+            return;
+        }
+
+        if (eventName === 'load' || isAnimationEvent || isTransitionEvent) {
+            this.checkForUpdate();
+        }
     };
 
     /**
@@ -171,6 +210,12 @@ export class ResizeWatcher {
             this.start();
         }
     };
+
+    /**
+     * Resize cb.
+     */
+
+    private resizeCb = () => this.checkForUpdate();
 
     constructor () {
         // this is for singleton
@@ -255,6 +300,15 @@ export class ResizeWatcher {
     private stop (): void {
         if (this.requestID) {
             cancelAnimationFrame(this.requestID);
+        }
+    }
+
+    private isElementExistInTheMap (element: Element, map: Map<Element, boolean>): boolean {
+        if (map.get(element)) {
+            return true;
+        } else {
+            let parentElement = element.parentElement;
+            return parentElement ? this.isElementExistInTheMap(parentElement, map) : false;
         }
     }
 
@@ -413,6 +467,8 @@ export class ResizeWatcher {
         instancesMap.forEach((elementRects, instance) => {
             instance.applyChanges(elementRects);
         });
+
+        console.log('update invoke')
     }
 
     /**
@@ -478,7 +534,6 @@ export class ResizeWatcher {
          * Iterate over styleSheets to find all elements with transition and animation.
          */
         for (let styleSheet of styleSheets) {
-            console.log(styleSheet)
             for (let cssRule of (styleSheet as any).cssRules) {
                 // Collect all keyFramesRules, that contains resize properties.
                 if (cssRule instanceof CSSKeyframesRule) {
@@ -486,7 +541,7 @@ export class ResizeWatcher {
                     continue;
                 }
 
-                let { style } = cssRule;
+                let { style, selectorText } = cssRule;
 
                 // We can't collect animations right away, because we should iterate over animations, that will be collected into the keyframesRules map after cycle will finish.
                 if (cssRule instanceof CSSStyleRule && style.animation) {
@@ -495,8 +550,22 @@ export class ResizeWatcher {
 
                 // But we can collect all elements with ttransitions, that pass this condition, right away in the transition map.
                 if (cssRule instanceof CSSStyleRule && style.transition && isTransitionHasResizeProperty(style)) {
-                    const element = document.querySelector(cssRule.selectorText);
+                    const element = document.querySelector(selectorText);
                     this.mapTransitionElements.set(element, true);
+                }
+
+                // Collect all elements with hover.
+                if (/:hover/g.test(selectorText)) {
+                    const   match = /(.+):hover/g.exec(selectorText),
+                            element = document.querySelector(match[1]);
+                    this.mapHoverElements.set(element, true);
+                }
+
+                // Collect all elements with focus, active and checked pseudo-classes.
+                if (/:(focus|active|checked)/g.test(selectorText)) {
+                    const   match = /(.+):(focus|active|checked)/g.exec(selectorText),
+                            element = document.querySelector(match[1]);
+                    this.mapActiveFocusedElements.set(element, true);
                 }
             }
         }
@@ -528,7 +597,6 @@ export class ResizeWatcher {
         };
 
         const callback = (mutationsList: Array<MutationRecord>) =>  {
-            console.log(mutationsList)
             // Flag, that help to detect, if the element has animation.
             let isAnimationTargetExist = false;
 
@@ -568,6 +636,7 @@ export class ResizeWatcher {
                 }
             }
 
+            console.log('here', mutationsList)
             // If request is not running - detect changes.
             if (!this.isAnimating && !this.isTransitioning) {
                 this.checkForUpdate();
@@ -596,7 +665,7 @@ export class ResizeWatcher {
             document.addEventListener(eventName, this.checkForUpdateListenersCb);
         });
 
-        window.addEventListener('resize', this.checkForUpdate)
+        window.addEventListener('resize', this.resizeCb)
     }
 
     /**
@@ -616,7 +685,7 @@ export class ResizeWatcher {
             document.removeEventListener(eventName, this.checkForUpdateListenersCb);
         });
 
-        window.removeEventListener('resize', this.checkForUpdate)
+        window.removeEventListener('resize', this.resizeCb)
     }
 
     /**

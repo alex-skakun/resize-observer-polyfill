@@ -14,20 +14,20 @@ const   test = document.getElementById('test'),
         divCheckbox = document.querySelector('#checkbox div');
 
 const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
-    // console.log(entries)
+    // count += entries.length;
+    // display.innerHTML = `${count}`;
+    console.log(entries)
 });
 
 const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
+    // count += entries.length;
+    // display.innerHTML = `${count}`;
     console.log(entries)
 });
 
 const c: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
+    // count += entries.length;
+    // display.innerHTML = `${count}`;
     console.log(entries)
 });
 
