@@ -9,20 +9,30 @@ let count = 0;
 const   test = document.getElementById('test'),
         divs = document.querySelectorAll('#test div'),
         display = document.getElementById('output'),
-        line = document.getElementById('line');
+        line = document.getElementById('line'),
+        divInput = document.querySelector('#input div'),
+        divCheckbox = document.querySelector('#checkbox div');
 
 const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    // count += entries.length;
-    // display.innerHTML = `${count}`;
+    count += entries.length;
+    display.innerHTML = `${count}`;
     // console.log(entries)
 });
 
 const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    // count += entries.length;
-    // display.innerHTML = `${count}`;
+    count += entries.length;
+    display.innerHTML = `${count}`;
     console.log(entries)
 });
 
+const c: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
+    count += entries.length;
+    display.innerHTML = `${count}`;
+    console.log(entries)
+});
+
+c.observe(divInput);
+c.observe(divCheckbox);
 
 divs.forEach(div => {
     a.observe(div);

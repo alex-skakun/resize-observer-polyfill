@@ -124,13 +124,35 @@
             width: 100px;
             height: 30px;
             background-color: rebeccapurple;
-            transition: padding 20s ease, margin 0s ease;
+            /* transition: padding 20s ease, margin 0s ease; */
+            transition: background-color 30s ease;
             padding: 10px;
             box-sizing: content-box;
         }
 
         #line.grow {
-            padding: 30px;
+            /* padding: 30px; */
+            background-color: red;
+        }
+
+        #input div {
+            height: 30px;
+            width: 30px;
+            background: blue;
+        }
+
+        #input input:focus ~ div {
+            width: 100px;
+        }
+
+        #checkbox div {
+            height: 30px;
+            width: 30px;
+            background: green;
+        }
+
+        #checkbox input:checked ~ div {
+            width: 100px;
         }
 
     </style>
@@ -240,5 +262,13 @@
 </div>
 <div id="output"></div>
 <div id="line"></div>
+<div id="input">
+    <input type="text">
+    <div></div>
+</div>
+<div id="checkbox">
+    <input type="checkbox">
+    <div></div>
+</div>
 </body>
 </html>

@@ -1,21 +1,32 @@
 import ResizeObserver from "./resize-observer";
 import { ElementData, ResizeObserverOptions, ResizeObserverEntry, BoxSize, Dimension, AnimationState } from "./interfaces";
 
+/**
+ * Events, that should check changes on every invoke.
+ */
 const EVENTS_FOR_CHECK_RESIZE = [
     'load',
     'transitionend',
     'animationend',
     'mousemove',
     'animationcancel',
-    'transitioncancel'
+    'transitioncancel',
+    'click'
 ];
 
+
+/**
+ * Events, that should run requestAnimationFrame, that should check changes during animation.
+ */
 const EVENTS_FOR_START_REQUEST_ANIMATION_FRAME = [
     'transitionstart',
     'animationstart',
     'animationiteration'
 ];
 
+/**
+ * Map of properties, that can change dimension of the element.
+ */
 const RESIZE_PROPERTIES_MAP = {
     'width': true,
     'max-width': true,
@@ -51,31 +62,80 @@ const RESIZE_PROPERTIES_MAP = {
     'border-right-width': true,
 };
 
+/**
+ * Instance variable for singleton.
+ */
 let instance: ResizeWatcher;
 
 export class ResizeWatcher {
+    /**
+     * ID of the requestAnimationFrame.
+     */
     private requestID: number;
+
+    /**
+     * Map, that contains all elements, that should be checked by ResizeObservable.
+     */
     private map = new Map<Element | SVGElement, ElementData>();
+
+    /**
+     * Map, that contains all elements with animation, that have properties, that can change dimension of the element.
+     */
     private mapAnimationElements = new Map<Element, AnimationState>();
+
+    /**
+     * Map, that contains all elements with transition, that have properties, that can change dimension of the element.
+     */
     private mapTransitionElements = new Map<Element, boolean>();
+
+    /**
+     * Flag for animation.
+     */
     private isAnimating = false;
+
+    /**
+     * Flag for transition.
+     */
     private isTransitioning = false;
+
+    /**
+     * Flag for listener initialization.
+     */
     private isListenersInitialized = false;
+
+    /**
+     * Mutation observer instance.
+     */
     private mutationObserver: MutationObserver;
+
+    /**
+     * Method, that calls recursively and check elements for change.
+     */
     private watchElements = () => {
+        if (!this.map.size) {
+            return;
+        }
+
         this.checkForUpdate();
 
+        console.log('here')
         this.requestID = requestAnimationFrame(this.watchElements);
     };
+
+    /**
+     * Method for EVENTS_FOR_CHECK_RESIZE array.
+     */
     private checkForUpdateListenersCb = ({ type: eventName, target }: Event) => {
         let isAnimationElement = this.mapAnimationElements.get(target as Element),
-            isTransitionElement = this.mapTransitionElements.get(target as Element);
+            isTransitionElement = this.mapTransitionElements.get(target as Element),
+            isAnimationEvent = eventName === 'animationend' || eventName === 'animationcancel',
+            isTransitionEvent = eventName === 'transitionend' || eventName === 'transitioncancel';
 
-        if ((eventName === 'animationend' || eventName === 'animationcancel') && isAnimationElement) {
+        if (isAnimationEvent && isAnimationElement) {
             this.isAnimating = false;
         }
 
-        if ((eventName === 'transitionend' || eventName === 'transitioncancel') && isTransitionElement) {
+        if (isTransitionEvent && isTransitionElement) {
             this.isTransitioning = false;
         }
 
@@ -85,14 +145,21 @@ export class ResizeWatcher {
 
         if (
             this.isAnimating || this.isTransitioning
-            || ((eventName === 'animationend' || eventName === 'animationcancel') && !isAnimationElement)
-            || ((eventName === 'transitionend' || eventName === 'transitioncancel') && !isTransitionElement)
+            || (isAnimationEvent && !isAnimationElement)
+            || (isTransitionEvent && !isTransitionElement)
         ) {
             return;
         }
+
+        console.log(eventName)
         
+        // check for update only when all transitions and animations finished
         this.checkForUpdate();
     };
+
+    /**
+     * Method for EVENTS_FOR_START_REQUEST_ANIMATION_FRAME array.
+     */
     private requestListenersCb = ({ type: eventName, target }: Event) => {
         if (eventName === 'transitionstart' && this.mapTransitionElements.get(target as Element)) {
             this.isTransitioning = true;
@@ -106,29 +173,25 @@ export class ResizeWatcher {
     };
 
     constructor () {
+        // this is for singleton
         if (instance) {
             return instance;
         }
 
-        console.log('here')
+        // generate all maps for animations and transitions
         this.setAnimationElementsToMap();
         instance = this;
 
         return this;
     }
 
-    start (): void {
-        this.stop();
-
-        this.requestID = requestAnimationFrame(this.watchElements);
-    }
-
-    stop (): void {
-        if (this.requestID) {
-            cancelAnimationFrame(this.requestID);
-        }
-    }
-
+    /**
+     * Append element to the map, that should be used for detect changes.
+     * 
+     * @param element HTML element.
+     * @param options Options for observer: 'content-box' or 'border-box'.
+     * @param instance Instance of the observable.
+     */
     addElementToMap (element: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): void {
         if (!this.isListenersInitialized) {
             this.initAllListeners();
@@ -141,6 +204,11 @@ export class ResizeWatcher {
         this.map.set(element, this.getElementData(element, options, instance));
     }
 
+    /**
+     * Remove element from the map.
+     * 
+     * @param element HTML element.
+     */
     removeElementFromInstance (element: Element | SVGElement): void {
         this.map.forEach((value, key) => {
             if (element === key) {
@@ -154,6 +222,11 @@ export class ResizeWatcher {
         }
     }
 
+    /**
+     * Method, that delete all elements with instance, that will be provided.
+     * 
+     * @param instance Observer instance.
+     */
     removeInstance (instance: ResizeObserver): void {
         this.map.forEach((value, key) => {
             if (instance === value.instance) {
@@ -167,26 +240,33 @@ export class ResizeWatcher {
         }
     }
 
-    getElementData (target: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): ElementData {
-        let bounding = target.getBoundingClientRect(),
-            computedStyles = getComputedStyle(target);
+    /**
+     * Start ping changes during the animation.
+     */
+    private start (): void {
+        this.stop();
 
-        return {
-            dimensionPrevious: <Dimension>{},
-            dimensionCurrent: {
-                borderHeight: bounding.height,
-                borderWidth: bounding.width,
-                contentHeight: bounding.height - this.getSumOfProperties(['paddingTop', 'paddingBottom', 'borderTop', 'borderBottom'], computedStyles),
-                contentWidth: bounding.width - this.getSumOfProperties(['paddingLeft', 'paddingRight', 'borderLeft', 'borderRight'], computedStyles)
-            },
-            bounding,
-            options,
-            instance,
-            computedStyles 
-        };
+        this.requestID = requestAnimationFrame(this.watchElements);
     }
 
-    getTargetEntry (target: Element | SVGElement, { bounding, computedStyles, options }: ElementData): ResizeObserverEntry {
+    /**
+     * Stop ping changes.
+     */
+    private stop (): void {
+        if (this.requestID) {
+            cancelAnimationFrame(this.requestID);
+        }
+    }
+
+    /**
+     * Method, that forms ResizeObserverEntry object.
+     * 
+     * @param target
+     * @param param1 ElementData object.
+     * 
+     * @returns {ResizeObserverEntry}
+     */
+    private getTargetEntry (target: Element | SVGElement, { bounding, computedStyles, options }: ElementData): ResizeObserverEntry {
         let borderBoxSize: BoxSize, contentBoxSize: BoxSize, contentRect: Partial<DOMRectReadOnly>;
 
         borderBoxSize = {
@@ -225,6 +305,43 @@ export class ResizeWatcher {
         };
     }
 
+    /**
+     * This method will call only once, when the new element will be added to the map.
+     * 
+     * 
+     * @param target 
+     * @param options 
+     * @param instance 
+     * 
+     * @returns {ElementData}
+     */
+    private getElementData (target: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): ElementData {
+        let bounding = target.getBoundingClientRect(),
+            computedStyles = getComputedStyle(target);
+
+        return {
+            dimensionPrevious: <Dimension>{},
+            dimensionCurrent: {
+                borderHeight: bounding.height,
+                borderWidth: bounding.width,
+                contentHeight: bounding.height - this.getSumOfProperties(['paddingTop', 'paddingBottom', 'borderTop', 'borderBottom'], computedStyles),
+                contentWidth: bounding.width - this.getSumOfProperties(['paddingLeft', 'paddingRight', 'borderLeft', 'borderRight'], computedStyles)
+            },
+            bounding,
+            options,
+            instance,
+            computedStyles 
+        };
+    }
+
+    /**
+     * Helper method, which return sum of the properties.
+     * 
+     * @param properties 
+     * @param computedStyles 
+     * 
+     * @returns {number} Returns sum.
+     */
     private getSumOfProperties (properties: Array<string>, computedStyles: CSSStyleDeclaration): number {
         let sum = 0;
         properties.forEach(property => {
@@ -233,10 +350,14 @@ export class ResizeWatcher {
         return sum;
     }
 
+    /**
+     * Method, that check elements for their cahnges.
+     */
     private checkForUpdate (): void {
         let currentRects = new Map<Element | SVGElement, ElementData>(),
             instancesMap = new Map<ResizeObserver, Array<ResizeObserverEntry>>();
 
+        // itarate over all elements in the map and collect all their new boundings and computedStyles. this will cause only one reflow of the page
         this.map.forEach((value, key) => {
             currentRects.set(key, {
                 ...value,
@@ -245,6 +366,7 @@ export class ResizeWatcher {
             });
         });
 
+        // iterate over new values of the elements
         currentRects.forEach((value, target) => {
             value.dimensionPrevious = value.dimensionCurrent;
             value.dimensionCurrent = {
@@ -254,6 +376,7 @@ export class ResizeWatcher {
                 contentWidth: value.bounding.width - this.getSumOfProperties(['paddingLeft', 'paddingRight', 'borderLeft', 'borderRight'], value.computedStyles)
             }
 
+            // if width or height not equal - set this element to the instance map and update main map with new data of the element
             if (
                 (
                     value.options.box === 'border-box'
@@ -286,23 +409,37 @@ export class ResizeWatcher {
             }
         });
 
+        // throw changed elements outside
         instancesMap.forEach((elementRects, instance) => {
             instance.applyChanges(elementRects);
         });
     }
 
+    /**
+     * Method, that generate map for transitions and animations elements.
+     * This method prevent observable from running request method, if the target element not exist in the animation map or transition map.
+     */
     private setAnimationElementsToMap (): void {
         const   { styleSheets } = document,
                 keyframesRules = new Map<string, boolean>(),
                 animationsRules: Array<CSSStyleRule> = [];
 
+        // function, that detect if the element with animation has property in the animation, that can change the dimension
         const isAnimationHasResizeProperty = ({ cssText, name }: CSSKeyframesRule): void => {
-            const reg = /([\w\-]+):/gi;
-            let match = reg.exec(cssText),
+            /**
+             * reg - regular expression to parse cssText value from CSSKeyframesRule
+             */
+            let reg = /([\w\-]+):/gi,
+                match = reg.exec(cssText),
                 property: string;
 
             while (match != null) {
                 property = match[1];
+                /**
+                 * If property contains in the RESIZE_PROPERTIES_MAP - then add it to the keyframesRules map.
+                 * After that we can break cycle, because it doesn't matter if we know, if one the properties already exist in the RESIZE_PROPERTIES_MAP.
+                 */ 
+                
                 if (RESIZE_PROPERTIES_MAP[property]) {
                     keyframesRules.set(name, true);
                     break;
@@ -313,12 +450,20 @@ export class ResizeWatcher {
         };
 
         const isTransitionHasResizeProperty = ({ transitionProperty }: CSSStyleDeclaration): boolean => {
-            const reg = /([\w\-]+),?/gi;
-            let match = reg.exec(transitionProperty),
+            /**
+             * reg - regular expression to parse transitionProperty value from style.
+             */
+            let reg = /([\w\-]+),?/gi,
+                match = reg.exec(transitionProperty),
                 property: string;
 
             while (match != null) {
                 property = match[1];
+                /**
+                 * If property contains in the RESIZE_PROPERTIES_MAP - then add it to the keyframesRules map.
+                 * After that we can break cycle, because it doesn't matter if we know, if one the properties already exist in the RESIZE_PROPERTIES_MAP.
+                 */ 
+
                 if (RESIZE_PROPERTIES_MAP[property]) {
                     return true;
                 }
@@ -329,9 +474,13 @@ export class ResizeWatcher {
             return false;
         };
 
+        /**
+         * Iterate over styleSheets to find all elements with transition and animation.
+         */
         for (let styleSheet of styleSheets) {
             console.log(styleSheet)
             for (let cssRule of (styleSheet as any).cssRules) {
+                // Collect all keyFramesRules, that contains resize properties.
                 if (cssRule instanceof CSSKeyframesRule) {
                     isAnimationHasResizeProperty(cssRule);
                     continue;
@@ -339,10 +488,12 @@ export class ResizeWatcher {
 
                 let { style } = cssRule;
 
+                // We can't collect animations right away, because we should iterate over animations, that will be collected into the keyframesRules map after cycle will finish.
                 if (cssRule instanceof CSSStyleRule && style.animation) {
                     animationsRules.push(cssRule);
                 }
 
+                // But we can collect all elements with ttransitions, that pass this condition, right away in the transition map.
                 if (cssRule instanceof CSSStyleRule && style.transition && isTransitionHasResizeProperty(style)) {
                     const element = document.querySelector(cssRule.selectorText);
                     this.mapTransitionElements.set(element, true);
@@ -350,6 +501,9 @@ export class ResizeWatcher {
             }
         }
 
+        /**
+         * Iterate over animationRules to collect elements to the animation map, that pass condition with animationName.
+         */
         for (let i = 0, animation: CSSStyleRule; i < animationsRules.length; i++) {
             animation = animationsRules[i];
             if (keyframesRules.get(animation.style.animationName)) {
@@ -362,6 +516,9 @@ export class ResizeWatcher {
         }
     }
 
+    /**
+     * Mutation observer initializer.
+     */
     private initializeMutationObserver (): void {
         const config = {
             attributes: true,
@@ -372,8 +529,11 @@ export class ResizeWatcher {
 
         const callback = (mutationsList: Array<MutationRecord>) =>  {
             console.log(mutationsList)
-
+            // Flag, that help to detect, if the element has animation.
             let isAnimationTargetExist = false;
+
+            // Iterate over mutationList to find, if something has animation.
+            // It needs to detect animation, if the animation already running, but it paused for some time.
             let isAnimating = mutationsList.some(mutation => {
                 if (this.mapAnimationElements.get(mutation.target as Element)) {
                     const computedStyle = getComputedStyle((mutation.target as HTMLElement));
@@ -384,10 +544,12 @@ export class ResizeWatcher {
                 return false;
             });
 
+            // Iterate over mutationList to detect, if something is the style nnode.
             let isStyleNode = mutationsList.some(mutation => {
                 return [...mutation.addedNodes].some((node: Element) => node.localName === 'style');
             });
 
+            // If style node - update animation and transition maps.
             if (isStyleNode) {
                 this.setAnimationElementsToMap();
             }
@@ -400,13 +562,14 @@ export class ResizeWatcher {
             if (!isAnimating && isAnimationTargetExist) {
                 this.isAnimating = false;
 
+                // Stop animationFrame only if there no any of transitions.
                 if (!this.isTransitioning) {
                     this.stop();
                 }
             }
 
-            
-            if (!this.isAnimating) {
+            // If request is not running - detect changes.
+            if (!this.isAnimating && !this.isTransitioning) {
                 this.checkForUpdate();
             }
         };
@@ -416,12 +579,18 @@ export class ResizeWatcher {
         this.mutationObserver.observe(document, config);
     }
 
+    /**
+     * Initialize EVENTS_FOR_START_REQUEST_ANIMATION_FRAME listeners.
+     */
     private inititalizeRequestListeners (): void {
         EVENTS_FOR_START_REQUEST_ANIMATION_FRAME.forEach(eventName => {
             document.addEventListener(eventName, this.requestListenersCb);
         });
     }
 
+    /**
+     * Initialize EVENTS_FOR_CHECK_RESIZE listeners.
+     */
     private initializeCheckForUpdateListeners (): void {
         EVENTS_FOR_CHECK_RESIZE.forEach(eventName => {
             document.addEventListener(eventName, this.checkForUpdateListenersCb);
@@ -430,12 +599,18 @@ export class ResizeWatcher {
         window.addEventListener('resize', this.checkForUpdate)
     }
 
+    /**
+     * Remove EVENTS_FOR_START_REQUEST_ANIMATION_FRAME listeners.
+     */
     private removeRequestListeners (): void {
         EVENTS_FOR_START_REQUEST_ANIMATION_FRAME.forEach(eventName => {
             document.removeEventListener(eventName, this.requestListenersCb);
         });
     }
 
+    /**
+     * Remove EVENTS_FOR_CHECK_RESIZE listeners.
+     */
     private removeCheckForUpdateListeners (): void {
         EVENTS_FOR_CHECK_RESIZE.forEach(eventName => {
             document.removeEventListener(eventName, this.checkForUpdateListenersCb);
@@ -444,6 +619,9 @@ export class ResizeWatcher {
         window.removeEventListener('resize', this.checkForUpdate)
     }
 
+    /**
+     * Initialize all listeners and mutation observer.
+     */
     private initAllListeners (): void {
         this.initializeMutationObserver();
         this.initializeCheckForUpdateListeners();
@@ -451,6 +629,9 @@ export class ResizeWatcher {
         this.isListenersInitialized = true;
     }
 
+    /**
+     * Remove all listeners and disconnect from muatation observer.
+     */
     private destroyAllListeners (): void {
         this.mutationObserver.disconnect();
         this.removeCheckForUpdateListeners();
