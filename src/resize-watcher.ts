@@ -57,6 +57,7 @@ export class ResizeWatcher {
     private requestID: number;
     private map = new Map<Element | SVGElement, ElementData>();
     private mapAnimationElements = new Map<Element, AnimationState>();
+    private mapTransitionElements = new Map<Element, boolean>();
     private isAnimating = false;
     private isTransitioning = false;
     private isListenersInitialized = false;
@@ -66,12 +67,15 @@ export class ResizeWatcher {
 
         this.requestID = requestAnimationFrame(this.watchElements);
     };
-    private checkForUpdateListenersCb = ({ type: eventName }: Event) => {
-        if (eventName === 'animationend') {
+    private checkForUpdateListenersCb = ({ type: eventName, target }: Event) => {
+        let isAnimationElement = this.mapAnimationElements.get(target as Element),
+            isTransitionElement = this.mapTransitionElements.get(target as Element);
+
+        if ((eventName === 'animationend' || eventName === 'animationcancel') && isAnimationElement) {
             this.isAnimating = false;
         }
 
-        if (eventName === 'transitionend') {
+        if ((eventName === 'transitionend' || eventName === 'transitioncancel') && isTransitionElement) {
             this.isTransitioning = false;
         }
 
@@ -79,22 +83,26 @@ export class ResizeWatcher {
             this.stop();
         }
 
-        if (this.isAnimating || this.isTransitioning) {
+        if (
+            this.isAnimating || this.isTransitioning
+            || ((eventName === 'animationend' || eventName === 'animationcancel') && !isAnimationElement)
+            || ((eventName === 'transitionend' || eventName === 'transitioncancel') && !isTransitionElement)
+        ) {
             return;
         }
         
         this.checkForUpdate();
     };
-    private requestListenersCb = ({ type: eventName }: Event) => {
-        if (eventName === 'transitionstart') {
+    private requestListenersCb = ({ type: eventName, target }: Event) => {
+        if (eventName === 'transitionstart' && this.mapTransitionElements.get(target as Element)) {
             this.isTransitioning = true;
+            this.start();
         }
 
-        if (eventName === 'animationstart') {
+        if (eventName === 'animationstart' || eventName === 'animationiteration' && this.mapAnimationElements.get(target as Element)) {
             this.isAnimating = true;
+            this.start();
         }
-
-        this.start();
     };
 
     constructor () {
@@ -285,33 +293,47 @@ export class ResizeWatcher {
 
     private setAnimationElementsToMap (): void {
         const   { styleSheets } = document,
-                keyframesRules: Array<CSSKeyframesRule> = [],
-                animationsRules: Array<CSSStyleRule> = [],
-                ttransitionRules: Array<CSSStyleRule> = [];
+                keyframesRules = new Map<string, boolean>(),
+                animationsRules: Array<CSSStyleRule> = [];
 
-        for (let styleSheet of styleSheets) {
-            console.log(styleSheet)
-            for (let cssRule of (styleSheet as any).cssRules) {
-                let { selectorText, style } = cssRule;
-                if (!style) {
-                    continue;
+        const isAnimationHasResizeProperty = ({ cssText, name }: CSSKeyframesRule): void => {
+            const reg = /([\w\-]+):/gi;
+            let match = reg.exec(cssText),
+                property: string;
+
+            while (match != null) {
+                property = match[1];
+                if (RESIZE_PROPERTIES_MAP[property]) {
+                    keyframesRules.set(name, true);
+                    break;
                 }
 
-                const element = document.querySelector(selectorText);
-
-                if (style.animation) {
-                    this.mapAnimationElements.set(element, {
-                        animationPlaying: style.animationPlayState === 'running'
-                    });
-                }
+                match = reg.exec(cssText);
             }
-        }
+        };
+
+        const isTransitionHasResizeProperty = ({ transitionProperty }: CSSStyleDeclaration): boolean => {
+            const reg = /([\w\-]+),?/gi;
+            let match = reg.exec(transitionProperty),
+                property: string;
+
+            while (match != null) {
+                property = match[1];
+                if (RESIZE_PROPERTIES_MAP[property]) {
+                    return true;
+                }
+
+                match = reg.exec(transitionProperty);
+            }
+
+            return false;
+        };
 
         for (let styleSheet of styleSheets) {
             console.log(styleSheet)
             for (let cssRule of (styleSheet as any).cssRules) {
                 if (cssRule instanceof CSSKeyframesRule) {
-                    keyframesRules.push(cssRule);
+                    isAnimationHasResizeProperty(cssRule);
                     continue;
                 }
 
@@ -321,17 +343,23 @@ export class ResizeWatcher {
                     animationsRules.push(cssRule);
                 }
 
-                if (cssRule instanceof CSSStyleRule && style.transition) {
-                    ttransitionRules.push(cssRule);
+                if (cssRule instanceof CSSStyleRule && style.transition && isTransitionHasResizeProperty(style)) {
+                    const element = document.querySelector(cssRule.selectorText);
+                    this.mapTransitionElements.set(element, true);
                 }
             }
         }
 
-        // TODO: think how to collect elements, that should run detect changes of the resize elements
-        for (let i = 0; i < keyframesRules.length; i++) {
+        for (let i = 0, animation: CSSStyleRule; i < animationsRules.length; i++) {
+            animation = animationsRules[i];
+            if (keyframesRules.get(animation.style.animationName)) {
+                const element = document.querySelector(animation.selectorText);
 
+                this.mapAnimationElements.set(element, {
+                    animationPlaying: animation.style.animationPlayState === 'running'
+                });
+            }
         }
-        
     }
 
     private initializeMutationObserver (): void {
