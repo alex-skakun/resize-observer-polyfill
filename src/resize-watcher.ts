@@ -128,7 +128,8 @@ export class ResizeWatcher {
      * Method, that calls recursively and check elements for change.
      */
     private watchElements = () => {
-        if (!this.map.size) {
+        // console.log(this.mapTransitionProcessingElements, this.mapAnimationProcessingElements)
+        if (!this.mapTransitionProcessingElements.size && !this.mapAnimationProcessingElements.size) {
             return;
         }
 
@@ -200,12 +201,14 @@ export class ResizeWatcher {
      * Method for EVENTS_FOR_START_REQUEST_ANIMATION_FRAME array.
      */
     private requestListenersCb = ({ type: eventName, target }: Event) => {
+        console.log(eventName, target)
         if (eventName === 'transitionstart' && this.mapTransitionElements.get(target as Element)) {
             this.mapTransitionProcessingElements.set(target as Element, true);
             this.start();
+            return;
         }
 
-        if (eventName === 'animationstart' && this.mapAnimationElements.get(target as Element)) {
+        if (eventName === 'animationstart' && this.mapAnimationElements.get(target as Element) && getComputedStyle(target as Element).animationPlayState === 'running') {
             this.mapAnimationProcessingElements.set(target as Element, true);
             this.start();
         }
@@ -257,7 +260,7 @@ export class ResizeWatcher {
     removeElementFromInstance (element: Element | SVGElement): void {
         this.map.forEach((value, key) => {
             if (element === key) {
-                this.map.delete(key);
+                this.deleteFromAllMaps(key);
             }
         });
 
@@ -275,7 +278,7 @@ export class ResizeWatcher {
     removeInstance (instance: ResizeObserver): void {
         this.map.forEach((value, key) => {
             if (instance === value.instance) {
-                this.map.delete(key);
+                this.deleteFromAllMaps(key);
             }
         });
 
@@ -283,6 +286,18 @@ export class ResizeWatcher {
             this.stop();
             this.destroyAllListeners();
         }
+    }
+
+    /**
+     * Delete element from all processing maps. It necessary, for example, when we disconnect observable
+     * with element, which has the processing animation state.
+     * 
+     * @param element 
+     */
+    private deleteFromAllMaps (element: Element | SVGElement): void {
+        this.map.delete(element);
+        this.mapTransitionProcessingElements.delete(element);
+        this.mapAnimationProcessingElements.delete(element);
     }
 
     /**
@@ -614,7 +629,7 @@ export class ResizeWatcher {
                 }
             });
 
-            // Iterate over mutationList to detect, if something is the style nnode.
+            // Iterate over mutationList to detect, if something is the style node.
             let isStyleNode = mutationsList.some(mutation => {
                 return [...mutation.addedNodes].some((node: Element) => node.localName === 'style');
             });
@@ -624,6 +639,7 @@ export class ResizeWatcher {
                 this.setAnimationElementsToMap();
             }
 
+            console.log(this.mapAnimationProcessingElements)
             if (isAnimationTargetExist) {
                 this.start();
             }
