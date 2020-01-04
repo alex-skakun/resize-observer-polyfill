@@ -11,28 +11,30 @@ const   test = document.getElementById('test'),
         display = document.getElementById('output'),
         line = document.getElementById('line'),
         divInput = document.querySelector('#input div'),
-        divCheckbox = document.querySelector('#checkbox div');
+        divCheckbox = document.querySelector('#checkbox div'),
+        text = document.getElementById('text');
 
 const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    // count += entries.length;
-    // display.innerHTML = `${count}`;
+    count += entries.length;
+    display.innerHTML = `${count}`;
     console.log(entries)
 });
 
 const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    // count += entries.length;
-    // display.innerHTML = `${count}`;
+    count += entries.length;
+    display.innerHTML = `${count}`;
     console.log(entries)
 });
 
 const c: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    // count += entries.length;
-    // display.innerHTML = `${count}`;
+    count += entries.length;
+    display.innerHTML = `${count}`;
     console.log(entries)
 });
 
 c.observe(divInput);
 c.observe(divCheckbox);
+c.observe(text);
 
 divs.forEach(div => {
     a.observe(div);
@@ -52,3 +54,7 @@ setTimeout(() => {
     const style = document.createElement('style');
     document.head.append(style);
 }, 5000);
+
+setTimeout(() => {
+    text.innerText = 'abc';
+}, 3000);

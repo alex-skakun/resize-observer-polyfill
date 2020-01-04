@@ -25,7 +25,7 @@
 
         body {
             margin: 0;
-            display: flex;
+            /* display: flex; */
         }
 
         #test {
@@ -165,6 +165,21 @@
             height: 100px;
         }
 
+        #animation-block div:first-child {
+            animation: squeeze-in-out 10s 10s alternate;
+            height: 10px;
+            width: 50px;
+            background: black;
+        }
+
+        #animation-block div:last-child {
+            animation: squeeze-in-out 10s 15s alternate;
+            height: 10px;
+            width: 50px;
+            background: black;
+        }
+
+
     </style>
 </head>
 <body>
@@ -281,5 +296,10 @@
     <div></div>
 </div>
 <div id="hover"></div>
+<div id="animation-block">
+    <div></div>
+    <div></div>
+</div>
+<div id="text"></div>
 </body>
 </html>

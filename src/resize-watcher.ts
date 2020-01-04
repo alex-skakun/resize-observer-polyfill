@@ -21,8 +21,7 @@ const EVENTS_FOR_CHECK_RESIZE = [
  */
 const EVENTS_FOR_START_REQUEST_ANIMATION_FRAME = [
     'transitionstart',
-    'animationstart',
-    'animationiteration'
+    'animationstart'
 ];
 
 /**
@@ -106,14 +105,14 @@ export class ResizeWatcher {
     private isElementFocused = false;
 
     /**
-     * Flag for animation.
+     * Map for elements, that currently animating.
      */
-    private isAnimating = false;
+    private mapAnimationProcessingElements = new Map<Element, boolean>();
 
     /**
-     * Flag for transition.
+     * Map for elements, that currently has transition.
      */
-    private isTransitioning = false;
+    private mapTransitionProcessingElements = new Map<Element, boolean>();
 
     /**
      * Flag for listener initialization.
@@ -142,27 +141,28 @@ export class ResizeWatcher {
      * Method for EVENTS_FOR_CHECK_RESIZE array.
      */
     private checkForUpdateListenersCb = ({ type: eventName, target }: Event) => {
-        let isAnimationElement = this.mapAnimationElements.get(target as Element),
-            isTransitionElement = this.mapTransitionElements.get(target as Element),
+        let animationElement = this.mapAnimationProcessingElements.get(target as Element),
+            transitionElement = this.mapTransitionProcessingElements.get(target as Element),
             isAnimationEvent = eventName === 'animationend' || eventName === 'animationcancel',
             isTransitionEvent = eventName === 'transitionend' || eventName === 'transitioncancel';
 
-        if (isAnimationEvent && isAnimationElement) {
-            this.isAnimating = false;
+        if (isAnimationEvent && animationElement) {
+            this.mapAnimationProcessingElements.delete(target as Element);
         }
 
-        if (isTransitionEvent && isTransitionElement) {
-            this.isTransitioning = false;
+        if (isTransitionEvent && transitionElement) {
+            this.mapTransitionProcessingElements.delete(target as Element);
         }
 
-        if (!this.isTransitioning && !this.isAnimating) {
+        if (!this.mapTransitionProcessingElements.size && !this.mapAnimationProcessingElements.size) {
             this.stop();
+            this.checkForUpdate();
         }
 
         if (
-            this.isAnimating || this.isTransitioning
-            || (isAnimationEvent && !isAnimationElement)
-            || (isTransitionEvent && !isTransitionElement)
+            this.mapAnimationProcessingElements.size || this.mapTransitionProcessingElements.size
+            || (isAnimationEvent && !animationElement)
+            || (isTransitionEvent && !transitionElement)
         ) {
             return;
         }
@@ -201,12 +201,12 @@ export class ResizeWatcher {
      */
     private requestListenersCb = ({ type: eventName, target }: Event) => {
         if (eventName === 'transitionstart' && this.mapTransitionElements.get(target as Element)) {
-            this.isTransitioning = true;
+            this.mapTransitionProcessingElements.set(target as Element, true);
             this.start();
         }
 
-        if (eventName === 'animationstart' || eventName === 'animationiteration' && this.mapAnimationElements.get(target as Element)) {
-            this.isAnimating = true;
+        if (eventName === 'animationstart' && this.mapAnimationElements.get(target as Element)) {
+            this.mapAnimationProcessingElements.set(target as Element, true);
             this.start();
         }
     };
@@ -602,14 +602,16 @@ export class ResizeWatcher {
 
             // Iterate over mutationList to find, if something has animation.
             // It needs to detect animation, if the animation already running, but it paused for some time.
-            let isAnimating = mutationsList.some(mutation => {
+            mutationsList.forEach(mutation => {
                 if (this.mapAnimationElements.get(mutation.target as Element)) {
                     const computedStyle = getComputedStyle((mutation.target as HTMLElement));
-                    isAnimationTargetExist = true;
-                    return computedStyle.animationPlayState === 'running';
+                    if (computedStyle.animationPlayState === 'running') {
+                        isAnimationTargetExist = true;
+                        this.mapAnimationProcessingElements.set(mutation.target as Element, true);
+                    } else {
+                        this.mapAnimationProcessingElements.delete(mutation.target as Element);
+                    }
                 }
-
-                return false;
             });
 
             // Iterate over mutationList to detect, if something is the style nnode.
@@ -622,23 +624,17 @@ export class ResizeWatcher {
                 this.setAnimationElementsToMap();
             }
 
-            if (isAnimating && isAnimationTargetExist) {
-                this.isAnimating = true;
+            if (isAnimationTargetExist) {
                 this.start();
             }
-            
-            if (!isAnimating && isAnimationTargetExist) {
-                this.isAnimating = false;
 
-                // Stop animationFrame only if there no any of transitions.
-                if (!this.isTransitioning) {
-                    this.stop();
-                }
+            if (!isAnimationTargetExist && !this.mapAnimationProcessingElements.size && !this.mapTransitionProcessingElements.size) {
+                this.stop();
             }
 
             console.log('here', mutationsList)
             // If request is not running - detect changes.
-            if (!this.isAnimating && !this.isTransitioning) {
+            if (!this.mapAnimationProcessingElements.size && !this.mapTransitionProcessingElements.size) {
                 this.checkForUpdate();
             }
         };
