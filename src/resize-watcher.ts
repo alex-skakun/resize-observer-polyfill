@@ -101,7 +101,6 @@ export class ResizeWatcher {
     /**
      * Flag for active element.
      */
-
     private isElementFocused = false;
 
     /**
@@ -125,10 +124,20 @@ export class ResizeWatcher {
     private mutationObserver: MutationObserver;
 
     /**
+     * Previous hovered element is needed to detect, if the document need to be reflowed on the mouse event.
+     */
+    private previousHoveredElement: Element = null;
+
+    /**
+     * Current hovered element is needed to detect, if the document need to be reflowed on the mouse event.
+     */
+    private currentHoveredElement: Element;
+
+    /**
      * Method, that calls recursively and check elements for change.
      */
     private watchElements = () => {
-        // console.log(this.mapTransitionProcessingElements, this.mapAnimationProcessingElements)
+        console.log('here')
         if (!this.mapTransitionProcessingElements.size && !this.mapAnimationProcessingElements.size) {
             return;
         }
@@ -155,25 +164,20 @@ export class ResizeWatcher {
             this.mapTransitionProcessingElements.delete(target as Element);
         }
 
-        if (!this.mapTransitionProcessingElements.size && !this.mapAnimationProcessingElements.size) {
+        if ((isAnimationEvent || isTransitionEvent) && !this.mapTransitionProcessingElements.size && !this.mapAnimationProcessingElements.size) {
             this.stop();
             this.checkForUpdate();
         }
 
-        if (
-            this.mapAnimationProcessingElements.size || this.mapTransitionProcessingElements.size
-            || (isAnimationEvent && !animationElement)
-            || (isTransitionEvent && !transitionElement)
-        ) {
+        if (isAnimationEvent || isTransitionEvent) {
             return;
         }
-
-        console.log(eventName)
         
         // check for update only when all transitions and animations finished
-        let isHoveredElementInTheMap = this.isElementExistInTheMap(target as Element, this.mapHoverElements);
+        this.currentHoveredElement = this.isElementExistInTheMap(target as Element, this.mapHoverElements);
 
-        if ((eventName === 'mousemove' || eventName === 'touchstart') && isHoveredElementInTheMap) {
+        if ((eventName === 'mousemove' || eventName === 'touchstart') && (this.currentHoveredElement !== this.previousHoveredElement)) {
+            this.previousHoveredElement = this.currentHoveredElement;
             this.checkForUpdate();
             return;
         }
@@ -201,13 +205,16 @@ export class ResizeWatcher {
      * Method for EVENTS_FOR_START_REQUEST_ANIMATION_FRAME array.
      */
     private requestListenersCb = ({ type: eventName, target }: Event) => {
-        console.log(eventName, target)
         if (eventName === 'transitionstart' && this.mapTransitionElements.get(target as Element)) {
             this.mapTransitionProcessingElements.set(target as Element, true);
             this.start();
             return;
         }
 
+        /**
+         * ComputedStyle needs to detect animation state, if the tab was reloaded and your main tab was another tab. In this case if animation has playState 'pause',
+         * it doesn't matter, it will be fire start method.
+         */
         if (eventName === 'animationstart' && this.mapAnimationElements.get(target as Element) && getComputedStyle(target as Element).animationPlayState === 'running') {
             this.mapAnimationProcessingElements.set(target as Element, true);
             this.start();
@@ -226,8 +233,6 @@ export class ResizeWatcher {
             return instance;
         }
 
-        // generate all maps for animations and transitions
-        this.setAnimationElementsToMap();
         instance = this;
 
         return this;
@@ -242,7 +247,7 @@ export class ResizeWatcher {
      */
     addElementToMap (element: Element | SVGElement, options: ResizeObserverOptions, instance: ResizeObserver): void {
         if (!this.isListenersInitialized) {
-            this.initAllListeners();
+            this.init();
         }
 
         if (this.map.get(element)) {
@@ -260,13 +265,12 @@ export class ResizeWatcher {
     removeElementFromInstance (element: Element | SVGElement): void {
         this.map.forEach((value, key) => {
             if (element === key) {
-                this.deleteFromAllMaps(key);
+                this.map.delete(key);
             }
         });
 
         if (!this.map.size) {
-            this.stop();
-            this.destroyAllListeners();
+            this.destroy();
         }
     }
 
@@ -278,26 +282,13 @@ export class ResizeWatcher {
     removeInstance (instance: ResizeObserver): void {
         this.map.forEach((value, key) => {
             if (instance === value.instance) {
-                this.deleteFromAllMaps(key);
+                this.map.delete(key);
             }
         });
 
         if (!this.map.size) {
-            this.stop();
-            this.destroyAllListeners();
+            this.destroy();
         }
-    }
-
-    /**
-     * Delete element from all processing maps. It necessary, for example, when we disconnect observable
-     * with element, which has the processing animation state.
-     * 
-     * @param element 
-     */
-    private deleteFromAllMaps (element: Element | SVGElement): void {
-        this.map.delete(element);
-        this.mapTransitionProcessingElements.delete(element);
-        this.mapAnimationProcessingElements.delete(element);
     }
 
     /**
@@ -318,12 +309,12 @@ export class ResizeWatcher {
         }
     }
 
-    private isElementExistInTheMap (element: Element, map: Map<Element, boolean>): boolean {
+    private isElementExistInTheMap (element: Element, map: Map<Element, boolean>): Element {
         if (map.get(element)) {
-            return true;
+            return element;
         } else {
             let parentElement = element.parentElement;
-            return parentElement ? this.isElementExistInTheMap(parentElement, map) : false;
+            return parentElement ? this.isElementExistInTheMap(parentElement, map) : null;
         }
     }
 
@@ -482,8 +473,6 @@ export class ResizeWatcher {
         instancesMap.forEach((elementRects, instance) => {
             instance.applyChanges(elementRects);
         });
-
-        console.log('update invoke')
     }
 
     /**
@@ -639,7 +628,6 @@ export class ResizeWatcher {
                 this.setAnimationElementsToMap();
             }
 
-            console.log(this.mapAnimationProcessingElements)
             if (isAnimationTargetExist) {
                 this.start();
             }
@@ -648,7 +636,6 @@ export class ResizeWatcher {
                 this.stop();
             }
 
-            console.log('here', mutationsList)
             // If request is not running - detect changes.
             if (!this.mapAnimationProcessingElements.size && !this.mapTransitionProcessingElements.size) {
                 this.checkForUpdate();
@@ -701,9 +688,10 @@ export class ResizeWatcher {
     }
 
     /**
-     * Initialize all listeners and mutation observer.
+     * Initialize all listeners and mutation observer, also generate map for all animations elements.
      */
-    private initAllListeners (): void {
+    private init (): void {
+        this.setAnimationElementsToMap();
         this.initializeMutationObserver();
         this.initializeCheckForUpdateListeners();
         this.inititalizeRequestListeners();
@@ -711,13 +699,20 @@ export class ResizeWatcher {
     }
 
     /**
-     * Remove all listeners and disconnect from muatation observer.
+     * Remove all listeners and disconnect from mutation observer, also clear all maps.
      */
-    private destroyAllListeners (): void {
+    private destroy (): void {
+        this.isListenersInitialized = false;
+        this.stop();
         this.mutationObserver.disconnect();
         this.removeCheckForUpdateListeners();
         this.removeRequestListeners();
-        this.isListenersInitialized = false;
+        this.mapActiveFocusedElements.clear();
+        this.mapAnimationElements.clear();
+        this.mapAnimationProcessingElements.clear();
+        this.mapHoverElements.clear();
+        this.mapTransitionElements.clear();
+        this.mapTransitionProcessingElements.clear();
     }
 
 }
