@@ -1,60 +1,65 @@
 import ResizeObserver from './resize-observer';
+import global from './schems/global';
 
-if (!('ResizeObserverCustom' in globalThis)) {
-    globalThis.ResizeObserverCustom = ResizeObserver;
-}
+export default (() => {
+    if (typeof global.ResizeObserverP !== 'undefined') {
+        return global.ResizeObserver;
+    }
 
-let count = 0;
+    return ResizeObserver;
+})();
 
-const   test = document.getElementById('test'),
-        divs = document.querySelectorAll('#test div'),
-        display = document.getElementById('output'),
-        line = document.getElementById('line'),
-        divInput = document.querySelector('#input div'),
-        divCheckbox = document.querySelector('#checkbox div'),
-        text = document.getElementById('text');
+// let count = 0;
 
-const a: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
-    console.log(entries)
-});
+// const   test = document.getElementById('test'),
+//         divs = document.querySelectorAll('#test div'),
+//         display = document.getElementById('output'),
+//         line = document.getElementById('line'),
+//         divInput = document.querySelector('#input div'),
+//         divCheckbox = document.querySelector('#checkbox div'),
+//         text = document.getElementById('text');
 
-const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
-    console.log(entries)
-});
+// const a: ResizeObserver = new globalThis['ResizeObserverCustom'](entries => {
+//     count += entries.length;
+//     display.innerHTML = `${count}`;
+//     console.log(entries)
+// });
 
-const c: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
-    count += entries.length;
-    display.innerHTML = `${count}`;
-    console.log(entries)
-});
+// const b: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
+//     count += entries.length;
+//     display.innerHTML = `${count}`;
+//     console.log(entries)
+// });
 
-c.observe(divInput);
-c.observe(divCheckbox);
-c.observe(text);
+// const c: ResizeObserver = new globalThis.ResizeObserverCustom(entries => {
+//     count += entries.length;
+//     display.innerHTML = `${count}`;
+//     console.log(entries)
+// });
 
-divs.forEach(div => {
-    a.observe(div);
-});
+// c.observe(divInput);
+// c.observe(divCheckbox);
+// c.observe(text);
 
-b.observe(line, {
-    box: 'border-box'
-})
+// divs.forEach(div => {
+//     a.observe(div);
+// });
 
-test.addEventListener('click', () => {
-    test.classList.toggle('animating');
-});
+// b.observe(line, {
+//     box: 'border-box'
+// })
 
-line.classList.add('grow');
+// test.addEventListener('click', () => {
+//     test.classList.toggle('animating');
+// });
 
-setTimeout(() => {
-    const style = document.createElement('style');
-    document.head.append(style);
-}, 5000);
+// line.classList.add('grow');
 
-setTimeout(() => {
-    text.innerText = 'abc';
-}, 3000);
+// setTimeout(() => {
+//     const style = document.createElement('style');
+//     document.head.append(style);
+// }, 5000);
+
+// setTimeout(() => {
+//     text.innerText = 'abc';
+// }, 3000);

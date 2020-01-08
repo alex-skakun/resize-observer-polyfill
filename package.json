@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "karma start --browsers Chrome",
+        "start": "tsc",
         "build": "webpack",
         "build:watch": "webpack --watch"
     },
@@ -20,9 +21,18 @@
     },
     "homepage": "https://github.com/alex-skakun/resize-observer-polyfill#readme",
     "devDependencies": {
+        "jasmine": "^3.5.0",
+        "karma": "^4.4.1",
+        "karma-chrome-launcher": "^3.1.0",
+        "karma-jasmine": "^3.0.1",
+        "karma-jasmine-html-reporter": "^1.5.1",
+        "karma-typescript": "^4.1.1",
         "ts-loader": "^6.2.1",
         "typescript": "^3.7.4",
         "webpack": "^4.41.4",
         "webpack-cli": "^3.3.10"
+    },
+    "dependencies": {
+        "@types/jest": "^24.0.25"
     }
 }

@@ -1,9 +1,13 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/",
-        "sourceMap": true,
-        "noImplicitAny": false,
-        "module": "commonjs",
-        "target": "es6"
-    }
+      "target": "es6",
+      "module": "commonjs",
+      "declaration": true,
+      "outDir": "./lib",
+      "strict": true,
+      "suppressImplicitAnyIndexErrors": true,
+      "strictPropertyInitialization": false
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "**/__tests__/*"]
 }

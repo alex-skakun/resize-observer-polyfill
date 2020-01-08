@@ -126,12 +126,12 @@ export class ResizeWatcher {
     /**
      * Previous hovered element is needed to detect, if the document need to be reflowed on the mouse event.
      */
-    private previousHoveredElement: Element = null;
+    private previousHoveredElement: Element | null = null;
 
     /**
      * Current hovered element is needed to detect, if the document need to be reflowed on the mouse event.
      */
-    private currentHoveredElement: Element;
+    private currentHoveredElement: Element | null;
 
     /**
      * Method, that calls recursively and check elements for change.
@@ -254,7 +254,9 @@ export class ResizeWatcher {
             return;
         }
 
-        this.map.set(element, this.getElementData(element, options, instance));
+        let elementData = this.getElementData(element, options, instance);
+        this.map.set(element, elementData);
+        instance.applyChanges([this.getTargetEntry(element, elementData)]);
     }
 
     /**
@@ -309,7 +311,7 @@ export class ResizeWatcher {
         }
     }
 
-    private isElementExistInTheMap (element: Element, map: Map<Element, boolean>): Element {
+    private isElementExistInTheMap (element: Element, map: Map<Element, boolean>): Element | null {
         if (map.get(element)) {
             return element;
         } else {
@@ -561,14 +563,14 @@ export class ResizeWatcher {
                 // Collect all elements with hover.
                 if (/:hover/g.test(selectorText)) {
                     const   match = /(.+):hover/g.exec(selectorText),
-                            element = document.querySelector(match[1]);
+                            element = document.querySelector((match as RegExpExecArray)[1]) as Element;
                     this.mapHoverElements.set(element, true);
                 }
 
                 // Collect all elements with focus, active and checked pseudo-classes.
                 if (/:(focus|active|checked)/g.test(selectorText)) {
                     const   match = /(.+):(focus|active|checked)/g.exec(selectorText),
-                            element = document.querySelector(match[1]);
+                            element = document.querySelector((match as RegExpExecArray)[1]) as Element;
                     this.mapActiveFocusedElements.set(element, true);
                 }
             }
@@ -580,7 +582,7 @@ export class ResizeWatcher {
         for (let i = 0, animation: CSSStyleRule; i < animationsRules.length; i++) {
             animation = animationsRules[i];
             if (keyframesRules.get(animation.style.animationName)) {
-                const element = document.querySelector(animation.selectorText);
+                const element = document.querySelector(animation.selectorText) as Element;
 
                 this.mapAnimationElements.set(element, {
                     animationPlaying: animation.style.animationPlayState === 'running'
@@ -620,7 +622,7 @@ export class ResizeWatcher {
 
             // Iterate over mutationList to detect, if something is the style node.
             let isStyleNode = mutationsList.some(mutation => {
-                return [...mutation.addedNodes].some((node: Element) => node.localName === 'style');
+                return [...mutation.addedNodes].some((node: Node) => (node as Element).localName === 'style');
             });
 
             // If style node - update animation and transition maps.
