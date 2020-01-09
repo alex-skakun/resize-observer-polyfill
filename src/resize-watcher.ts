@@ -706,7 +706,9 @@ export class ResizeWatcher {
     private destroy (): void {
         this.isListenersInitialized = false;
         this.stop();
-        this.mutationObserver.disconnect();
+        if (this.mutationObserver) {
+            this.mutationObserver.disconnect();
+        }
         this.removeCheckForUpdateListeners();
         this.removeRequestListeners();
         this.mapActiveFocusedElements.clear();

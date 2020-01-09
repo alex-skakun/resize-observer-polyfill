@@ -27,7 +27,8 @@ module.exports = function(config) {
                 "declaration": true,
                 "strict": true,
                 "suppressImplicitAnyIndexErrors": true,
-                "strictPropertyInitialization": false
+                "strictPropertyInitialization": false,
+                "strictNullChecks": false
             },
             "exclude": ["node_modules"]
         }
