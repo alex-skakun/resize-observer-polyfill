@@ -160,7 +160,9 @@ describe('ResizeObserver', () => {
 
             expect(() => resizeObserverOne.observe('123' as unknown as HTMLElement)).toThrowError(message);
 
-            expect(() => resizeObserverOne.observe(<HTMLElement>document.getElementById('hover-that-not-exist'))).toThrowError(message);
+            expect(() => resizeObserverOne.observe(
+                <HTMLElement>document.getElementById('hover-that-not-exist')
+            )).toThrowError(message);
 
             expect(() => resizeObserverOne.observe(<HTMLElement>document.getElementById('hover'))).not.toThrow();
         });
@@ -192,7 +194,7 @@ describe('ResizeObserver', () => {
                     expect(resizeEntry.contentRect.height).toEqual(30);
                     expect(resizeEntry.contentRect.width).toEqual(100);
 
-                    return Promise.resolve(input.click())
+                    return Promise.resolve(input.click());
                 })
                 .then(() => {
                     expect(resizeEntry.contentRect.height).toEqual(30);
@@ -215,14 +217,14 @@ describe('ResizeObserver', () => {
 
             animationEnd(line, 'transitionend')
                 .then(() => {
-                    expect(resizeEntry.contentRect.height).toEqual(30);
-                    expect(resizeEntry.contentRect.width).toEqual(100);
+                    expect(+resizeEntry.contentRect.height.toFixed()).toEqual(30);
+                    expect(+resizeEntry.contentRect.width.toFixed()).toEqual(100);
 
-                    expect(resizeEntry.borderBoxSize.blockSize).toEqual(90);
-                    expect(resizeEntry.borderBoxSize.inlineSize).toEqual(160);
+                    expect(+resizeEntry.borderBoxSize.blockSize.toFixed()).toEqual(90);
+                    expect(+resizeEntry.borderBoxSize.inlineSize.toFixed()).toEqual(160);
 
-                    expect(resizeEntry.contentBoxSize.blockSize).toEqual(30);
-                    expect(resizeEntry.contentBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntry.contentBoxSize.blockSize.toFixed()).toEqual(30);
+                    expect(+resizeEntry.contentBoxSize.inlineSize.toFixed()).toEqual(100);
 
                     done();
                 });
@@ -240,36 +242,36 @@ describe('ResizeObserver', () => {
 
             animationEnd(animationDiv, 'animationstart')
                 .then(() => {
-                    expect(resizeEntry.contentRect.height).toEqual(10);
-                    expect(resizeEntry.contentRect.width).toEqual(50);
+                    expect(+resizeEntry.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntry.contentRect.width.toFixed()).toEqual(50);
 
-                    expect(resizeEntry.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntry.borderBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntry.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntry.borderBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntry.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntry.contentBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntry.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntry.contentBoxSize.inlineSize.toFixed()).toEqual(50);
 
                     return animationEnd(animationDiv, 'animationiteration');
                 }).then(() => {
-                    expect(resizeEntry.contentRect.height).toEqual(10);
-                    expect(resizeEntry.contentRect.width).toEqual(100);
+                    expect(+resizeEntry.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntry.contentRect.width.toFixed()).toEqual(100);
 
-                    expect(resizeEntry.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntry.borderBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntry.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntry.borderBoxSize.inlineSize.toFixed()).toEqual(100);
 
-                    expect(resizeEntry.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntry.contentBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntry.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntry.contentBoxSize.inlineSize.toFixed()).toEqual(100);
 
                     return animationEnd(animationDiv, 'animationend');
                 }).then(() => {
-                    expect(resizeEntry.contentRect.height).toEqual(10);
-                    expect(resizeEntry.contentRect.width).toEqual(50);
+                    expect(+resizeEntry.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntry.contentRect.width.toFixed()).toEqual(50);
 
-                    expect(resizeEntry.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntry.borderBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntry.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntry.borderBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntry.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntry.contentBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntry.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntry.contentBoxSize.inlineSize.toFixed()).toEqual(50);
 
                     done();
                 });
@@ -296,69 +298,69 @@ describe('ResizeObserver', () => {
                 animationEnd(animationDivOne, 'animationstart'),
                 animationEnd(animationDivTwo, 'animationstart'),
             ]).then(() => {
-                    expect(resizeEntryOne.contentRect.height).toEqual(10);
-                    expect(resizeEntryOne.contentRect.width).toEqual(50);
+                    expect(+resizeEntryOne.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.contentRect.width.toFixed()).toEqual(50);
 
-                    expect(resizeEntryOne.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryOne.borderBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryOne.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.borderBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntryOne.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryOne.contentBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryOne.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.contentBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntryTwo.contentRect.height).toEqual(10);
-                    expect(resizeEntryTwo.contentRect.width).toEqual(50);
+                    expect(+resizeEntryTwo.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.contentRect.width.toFixed()).toEqual(50);
 
-                    expect(resizeEntryTwo.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryTwo.borderBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryTwo.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.borderBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntryTwo.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryTwo.contentBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryTwo.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.contentBoxSize.inlineSize.toFixed()).toEqual(50);
 
                     return Promise.all([
                         animationEnd(animationDivOne, 'animationiteration'),
                         animationEnd(animationDivTwo, 'animationiteration')
                     ]);
                 }).then(() => {
-                    expect(resizeEntryOne.contentRect.height).toEqual(10);
-                    expect(resizeEntryOne.contentRect.width).toEqual(100);
+                    expect(+resizeEntryOne.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.contentRect.width.toFixed()).toEqual(100);
 
-                    expect(resizeEntryOne.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryOne.borderBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntryOne.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.borderBoxSize.inlineSize.toFixed()).toEqual(100);
 
-                    expect(resizeEntryOne.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryOne.contentBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntryOne.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.contentBoxSize.inlineSize.toFixed()).toEqual(100);
 
-                    expect(resizeEntryTwo.contentRect.height).toEqual(10);
-                    expect(resizeEntryTwo.contentRect.width).toEqual(100);
+                    expect(+resizeEntryTwo.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.contentRect.width.toFixed()).toEqual(100);
 
-                    expect(resizeEntryTwo.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryTwo.borderBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntryTwo.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.borderBoxSize.inlineSize.toFixed()).toEqual(100);
 
-                    expect(resizeEntryTwo.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryTwo.contentBoxSize.inlineSize).toEqual(100);
+                    expect(+resizeEntryTwo.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.contentBoxSize.inlineSize.toFixed()).toEqual(100);
 
                     return Promise.all([
                         animationEnd(animationDivOne, 'animationend'),
                         animationEnd(animationDivTwo, 'animationend')
                     ]);
                 }).then(() => {
-                    expect(resizeEntryOne.contentRect.height).toEqual(10);
-                    expect(resizeEntryOne.contentRect.width).toEqual(50);
+                    expect(+resizeEntryOne.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.contentRect.width.toFixed()).toEqual(50);
 
-                    expect(resizeEntryOne.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryOne.borderBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryOne.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.borderBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntryOne.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryOne.contentBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryOne.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryOne.contentBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntryTwo.contentRect.height).toEqual(10);
-                    expect(resizeEntryTwo.contentRect.width).toEqual(50);
+                    expect(+resizeEntryTwo.contentRect.height.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.contentRect.width.toFixed()).toEqual(50);
 
-                    expect(resizeEntryTwo.borderBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryTwo.borderBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryTwo.borderBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.borderBoxSize.inlineSize.toFixed()).toEqual(50);
 
-                    expect(resizeEntryTwo.contentBoxSize.blockSize).toEqual(10);
-                    expect(resizeEntryTwo.contentBoxSize.inlineSize).toEqual(50);
+                    expect(+resizeEntryTwo.contentBoxSize.blockSize.toFixed()).toEqual(10);
+                    expect(+resizeEntryTwo.contentBoxSize.inlineSize.toFixed()).toEqual(50);
 
                     done();
                 });

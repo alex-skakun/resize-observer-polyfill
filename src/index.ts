@@ -7,4 +7,4 @@ export default (() => {
     }
 
     return ResizeObserver;
-})();
+})() as ResizeObserver;

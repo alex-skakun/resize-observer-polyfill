@@ -1,0 +1,10 @@
+/tests
+/src
+/node_modules
+/coverage
+package-lock.json
+tsconfig.json
+tslint.json
+karma.conf.js
+.gitignore
+index.html
