@@ -1,4 +1,4 @@
-declare var global: any
+declare var global: any;
 
 export default (() => {
     if (typeof global !== 'undefined' && global.Math === Math) {

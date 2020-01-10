@@ -24,8 +24,8 @@ export interface Dimension {
 }
 
 export interface ElementData {
-    dimensionPrevious: Dimension,
-    dimensionCurrent: Dimension,
+    dimensionPrevious: Dimension;
+    dimensionCurrent: Dimension;
     bounding: DOMRectReadOnly;
     instance: ResizeObserver;
     computedStyles: CSSStyleDeclaration;

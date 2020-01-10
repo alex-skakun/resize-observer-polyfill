@@ -1,13 +1,9 @@
-import ResizeObserver from "../src";
+import ResizeObserver from "../src/resize-observer";
 import { ResizeObserverEntry } from "../src/interfaces";
-import ResizeObserverType from "../src/resize-observer";
 import { wait, animationEnd } from "./helpers";
-type ResizeObserver = ResizeObserverType;
 
 describe('ResizeObserver', () => {
-    let firstObserverChangesLength = 0,
-        secondObserverChangesLength = 0,
-        resizeObserverOne: ResizeObserver | null,
+    let resizeObserverOne: ResizeObserver | null,
         resizeObserverTwo: ResizeObserver | null,
         style: Element,
         templateElement: Element;
@@ -129,7 +125,7 @@ describe('ResizeObserver', () => {
     describe('constructor', () => {
         it('if constructor didn\'t recieve the argument - throw the error', () => {
             expect(() => {
-                new ResizeObserver();
+                new ResizeObserver(undefined);
             }).toThrowError(`Failed to construct 'ResizeObserver': 1 argument required, but only 0 present.`);
         });
 
@@ -137,11 +133,11 @@ describe('ResizeObserver', () => {
             const message = `Failed to construct 'ResizeObserver': The callback provided as parameter 1 is not a function.`;
 
             expect(() => {
-                new ResizeObserver({});
+                new ResizeObserver({} as () => void);
             }).toThrowError(message);
 
             expect(() => {
-                new ResizeObserver('123');
+                new ResizeObserver('123' as unknown as () => void);
             }).toThrowError(message);
 
             expect(() => {
@@ -296,8 +292,6 @@ describe('ResizeObserver', () => {
             resizeObserverOne.observe(animationDivOne);
             resizeObserverTwo.observe(animationDivTwo);
 
-            console.log(animationDivTwo)
-
             Promise.all([
                 animationEnd(animationDivOne, 'animationstart'),
                 animationEnd(animationDivTwo, 'animationstart'),
@@ -325,7 +319,6 @@ describe('ResizeObserver', () => {
                         animationEnd(animationDivTwo, 'animationiteration')
                     ]);
                 }).then(() => {
-                    console.log('iteration')
                     expect(resizeEntryOne.contentRect.height).toEqual(10);
                     expect(resizeEntryOne.contentRect.width).toEqual(100);
 
@@ -349,8 +342,6 @@ describe('ResizeObserver', () => {
                         animationEnd(animationDivTwo, 'animationend')
                     ]);
                 }).then(() => {
-                    console.log('end')
-
                     expect(resizeEntryOne.contentRect.height).toEqual(10);
                     expect(resizeEntryOne.contentRect.width).toEqual(50);
 

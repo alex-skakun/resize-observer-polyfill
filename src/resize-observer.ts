@@ -7,7 +7,7 @@ export default class ResizeObserver {
     private resizeWatcher: ResizeWatcher;
 
     constructor (callback: (entries: Array<ResizeObserverEntry>) => void) {
-        if (callback === undefined) {
+        if (typeof callback === 'undefined') {
             throw new Error(`Failed to construct 'ResizeObserver': 1 argument required, but only 0 present.`);
         }
 
@@ -20,8 +20,10 @@ export default class ResizeObserver {
     }
 
     observe (target: Element | SVGElement, options: ResizeObserverOptions = getDefaultOptions()): void {
-        if (target === undefined) {
-            throw new Error(`Failed to execute 'observe' on 'ResizeObserver': 1 argument required, but only 0 present.`);
+        if (typeof target === 'undefined') {
+            throw new Error(
+                `Failed to execute 'observe' on 'ResizeObserver': 1 argument required, but only 0 present.`
+            );
         }
 
         if (!isElement(target as HTMLElement)) {
@@ -32,8 +34,10 @@ export default class ResizeObserver {
     }
 
     unobserve (target: Element | SVGElement): void {
-        if (target === undefined) {
-            throw new Error(`Failed to execute 'observe' on 'ResizeObserver': 1 argument required, but only 0 present.`);
+        if (typeof target === 'undefined') {
+            throw new Error(
+                `Failed to execute 'observe' on 'ResizeObserver': 1 argument required, but only 0 present.`
+            );
         }
 
         if (!isElement(target as HTMLElement)) {
