@@ -5,6 +5,10 @@ export interface BoxSize {
     inlineSize: number;
 }
 
+export interface Constructable<T> {
+    new(): T;
+}
+
 export interface ResizeObserverEntry {
     borderBoxSize: BoxSize;
     contentBoxSize: BoxSize;
