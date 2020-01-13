@@ -1,68 +1,57 @@
-
-interface BoxSize {
-    blockSize: number;
-    inlineSize: number;
-}
-
-interface ResizeObserverEntry {
-    borderBoxSize: BoxSize;
-    contentBoxSize: BoxSize;
-    contentRect: DOMRectReadOnly;
-    target: Element | SVGElement;
-}
-
-interface ResizeObserverOptions {
-    box: 'content-box' | 'border-box';
-}
-
-
-const OBSERVER_INSTANCES = new WeakSet<ResizeObserver>();
+import { ResizeObserverEntry, ResizeObserverOptions } from "./interfaces";
+import { ResizeWatcher } from './resize-watcher';
+import { isFunction, isElement } from './helpers/helpers';
 
 export default class ResizeObserver {
     private readonly callback: (entries: Array<ResizeObserverEntry>) => void;
-    private readonly targets = new Map<Element | SVGElement, ResizeObserverOptions>();
+    private resizeWatcher: ResizeWatcher;
 
     constructor (callback: (entries: Array<ResizeObserverEntry>) => void) {
+        if (typeof callback === 'undefined') {
+            throw new Error(`Failed to construct 'ResizeObserver': 1 argument required, but only 0 present.`);
+        }
+
+        if (!isFunction(callback)) {
+            throw new Error(`Failed to construct 'ResizeObserver': The callback provided as parameter 1 is not a function.`);
+        }
+
+        this.resizeWatcher = new ResizeWatcher();
         this.callback = callback.bind(null);
     }
 
-
-    observe (target: Element | SVGElement, options: ResizeObserverOptions = getDefaultOptions()) {
-        this.targets.set(target, options);
-        if (this.targets.size === 1) {
-            window.addEventListener('resize', this, {passive: true});
+    observe (target: Element | SVGElement, options: ResizeObserverOptions = getDefaultOptions()): void {
+        if (typeof target === 'undefined') {
+            throw new Error(
+                `Failed to execute 'observe' on 'ResizeObserver': 1 argument required, but only 0 present.`
+            );
         }
+
+        if (!isElement(target as HTMLElement)) {
+            throw new Error(`Failed to execute 'observe' on 'ResizeObserver': parameter 1 is not of type 'Element'.`);
+        }
+
+        this.resizeWatcher.addElementToMap(target, options, this);
     }
 
-    unobserve (target: Element | SVGElement) {
-        this.targets.delete(target);
-        if (this.targets.size === 0) {
-            window.removeEventListener('resize', this);
+    unobserve (target: Element | SVGElement): void {
+        if (typeof target === 'undefined') {
+            throw new Error(
+                `Failed to execute 'observe' on 'ResizeObserver': 1 argument required, but only 0 present.`
+            );
         }
+
+        if (!isElement(target as HTMLElement)) {
+            throw new Error(`Failed to execute 'observe' on 'ResizeObserver': parameter 1 is not of type 'Element'.`);
+        }
+
+        this.resizeWatcher.removeElementFromInstance(target);
     }
 
-    disconnect () {
-        window.removeEventListener('resize', this);
-        this.targets.clear();
+    disconnect (): void {
+        this.resizeWatcher.removeInstance(this);
     }
 
-    handleEvent () {
-        let entries: Array<ResizeObserverEntry> = [];
-        for (let target of this.targets.keys()) {
-            let contentRect = <DOMRect>target.getBoundingClientRect();
-            entries.push({
-                target,
-                contentRect,
-                borderBoxSize: {
-                    blockSize: 0,
-                    inlineSize: 0
-                },
-                contentBoxSize: {
-                    blockSize: 0,
-                    inlineSize: 0
-                }
-            })
-        }
+    applyChanges (entries: Array<ResizeObserverEntry>): void {
         this.callback(entries);
     }
 

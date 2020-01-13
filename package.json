@@ -1,25 +1,56 @@
 {
-    "name": "resize-observer-polyfill",
-    "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
+    "name": "polyfill-for-resize-observer",
+    "version": "1.0.2",
+    "description": "Polyfill for ResizeObserver, that based on Mutation Observer and events.",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "tsc",
-        "start:watch": "tsc --watch"
+        "test": "karma start --browsers Chrome",
+        "lint": "tslint -p tsconfig.json --config tslint.json",
+        "build": "tsc"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/alex-skakun/resize-observer-polyfill.git"
     },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
+    "contributors": [
+        {
+            "name": "Alexey Skakun",
+            "url": "https://github.com/alex-skakun"
+        },
+        {
+            "name": "Maksym Dovhal",
+            "url": "https://github.com/soulr1ver"
+        }
+    ],
+    "maintainers": [
+        {
+            "name": "Maksym Dovhal",
+            "url": "https://github.com/soulr1ver"
+        }
+    ],
+    "keywords": [
+        "javascript",
+        "typescript",
+        "polyfill",
+        "resize observer"
+    ],
+    "author": "Alexey Skakun",
+    "license": "MIT",
     "bugs": {
         "url": "https://github.com/alex-skakun/resize-observer-polyfill/issues"
     },
     "homepage": "https://github.com/alex-skakun/resize-observer-polyfill#readme",
     "devDependencies": {
+        "@types/jest": "^24.0.25",
+        "jasmine": "^3.5.0",
+        "karma": "^4.4.1",
+        "karma-chrome-launcher": "^3.1.0",
+        "karma-jasmine": "^3.0.1",
+        "karma-jasmine-html-reporter": "^1.5.1",
+        "karma-typescript": "^4.1.1",
+        "tslint": "^5.20.1",
+        "tslint-eslint-rules": "^5.4.0",
         "typescript": "^3.7.4"
     }
 }

@@ -1,5 +1,11 @@
 import ResizeObserver from './resize-observer';
+import global from './schems/global';
+import { Constructable } from './interfaces';
 
-if (!('ResizeObserver' in globalThis)) {
-    globalThis.ResizeObserver = ResizeObserver;
-}
+export default (() => {
+    if (typeof global.ResizeObserver !== 'undefined') {
+        return global.ResizeObserver;
+    }
+
+    return ResizeObserver;
+})() as Constructable<ResizeObserver>;

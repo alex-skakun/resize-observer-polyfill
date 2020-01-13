@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script defer src="./dist/bundle.js"></script>
+    <style>
+        @keyframes test {
+            from {
+                width: 100%;
+                height: 100%;
+            }
+            to {
+                width: 50%;
+                height: 50%;
+            }
+        }
+
+        html, body {
+            height: 100%;
+            background-color: #333;
+        }
+
+        body {
+            margin: 0;
+            /* display: flex; */
+        }
+
+        #test {
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            grid-gap: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+            animation: test 1s ease infinite alternate;
+            animation-play-state: paused;
+        }
+
+        #test.animating {
+            animation-play-state: running;
+        }
+
+        #test > div {
+            background-color: #001dff;
+            border: 5px solid #70a2ff;
+            box-sizing: border-box;
+        }
+        #output {
+            position: fixed;
+            background-color: #000;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 80px;
+            color: #fff;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #performance-example.animate {
+            animation-play-state: running;
+        }
+
+        #performance-example {
+            display: flex;
+            flex-flow: row wrap;
+            animation: squeeze-in-out 1s infinite alternate;
+            animation-play-state: paused;
+            width: 100%;
+            margin: 0;
+            font-size: 50%;
+            cursor: pointer;
+        }
+
+        #performance-example div, [resize] {
+            min-width: 100px;
+            min-height: 100px;
+            height: 100px;
+            position: relative;
+            white-space: nowrap;
+            background: #f35;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            user-select: none;
+            box-sizing: border-box;
+            background-clip: content-box;
+            border: 0 solid rgba(0,0,0,.2);
+            cursor: pointer;
+        }
+
+        #performance-example div {
+            margin: 2px;
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 10px;
+            width: calc(5% - 4px);
+            height: auto;
+        }
+
+        @keyframes squeeze-in-out {
+            100% {
+                width: 50%;
+            }
+        }
+        .display {
+            width: 300px;
+            text-align: center;
+            background-color: black;
+            color: white;
+            padding: 20px;
+        }
+
+        #line {
+            width: 100px;
+            height: 30px;
+            background-color: rebeccapurple;
+            /* transition: padding 20s ease, margin 0s ease; */
+            transition: background-color 30s ease;
+            padding: 10px;
+            box-sizing: content-box;
+        }
+
+        #line.grow {
+            /* padding: 30px; */
+            background-color: red;
+        }
+
+        #input div {
+            height: 30px;
+            width: 30px;
+            background: blue;
+        }
+
+        #input input:focus ~ div {
+            width: 100px;
+        }
+
+        #checkbox div {
+            height: 30px;
+            width: 30px;
+            background: green;
+        }
+
+        #checkbox input:checked ~ div {
+            width: 100px;
+        }
+
+        #hover {
+            width: 20px;
+            height: 30px;
+            background-color: cadetblue;
+        }
+
+        #hover:hover {
+            height: 100px;
+        }
+
+        #animation-block div:first-child {
+            animation: squeeze-in-out 10s 10s alternate;
+            height: 10px;
+            width: 50px;
+            background: black;
+        }
+
+        #animation-block div:last-child {
+            animation: squeeze-in-out 10s 15s alternate;
+            height: 10px;
+            width: 50px;
+            background: black;
+        }
+
+
+    </style>
+</head>
+<body>
+<div id="test" class="">
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+</div>
+<div id="output"></div>
+<div id="line"></div>
+<div id="input">
+    <input type="text">
+    <div></div>
+</div>
+<div id="checkbox">
+    <input type="checkbox">
+    <div></div>
+</div>
+<div id="hover"></div>
+<div id="animation-block">
+    <div></div>
+    <div></div>
+</div>
+<div id="text"></div>
+</body>
+</html>
