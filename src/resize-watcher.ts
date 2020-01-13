@@ -593,9 +593,9 @@ export class ResizeWatcher {
 
                     selectors.forEach(selector => {
                         let match = /(.+):hover/g.exec(selector.trim()),
-                            element = document.querySelector(
+                            element = match ? document.querySelector(
                                 concatValidSelector((match as RegExpExecArray)[0])
-                            ) as Element;
+                            ) as Element : null;
 
                         if (element) {
                             this.mapHoverElements.set(element, true);
@@ -609,9 +609,9 @@ export class ResizeWatcher {
 
                     selectors.forEach(selector => {
                         let match = /(.+):(focus|active|checked)/g.exec(selector.trim()),
-                            element = document.querySelector(
+                            element = match ? document.querySelector(
                                 concatValidSelector((match as RegExpExecArray)[0])
-                            ) as Element;
+                            ) as Element : null;
 
                         if (element) {
                             this.mapActiveFocusedElements.set(element, true);
