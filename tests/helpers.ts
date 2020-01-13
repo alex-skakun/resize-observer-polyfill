@@ -7,6 +7,6 @@ export const animationEnd = (element: HTMLElement, eventName: string) => {
             res();
         };
 
-        element.addEventListener(eventName, cb)
+        element.addEventListener(eventName, cb);
     });
-}
+};

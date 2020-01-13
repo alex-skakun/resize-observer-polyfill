@@ -1,5 +1,6 @@
 import ResizeObserver from "./resize-observer";
 import { ElementData, ResizeObserverOptions, ResizeObserverEntry, BoxSize, Dimension, AnimationState } from "./interfaces";
+import { concatValidSelector } from "./helpers/helpers";
 
 /**
  * Events, that should check changes on every invoke.
@@ -588,16 +589,34 @@ export class ResizeWatcher {
 
                 // Collect all elements with hover.
                 if (/:hover/g.test(selectorText)) {
-                    const   match = /(.+):hover/g.exec(selectorText),
-                            element = document.querySelector((match as RegExpExecArray)[1]) as Element;
-                    this.mapHoverElements.set(element, true);
+                    const selectors = (selectorText as string).split(',');
+
+                    selectors.forEach(selector => {
+                        let match = /(.+):hover/g.exec(selector.trim()),
+                            element = document.querySelector(
+                                concatValidSelector((match as RegExpExecArray)[0])
+                            ) as Element;
+
+                        if (element) {
+                            this.mapHoverElements.set(element, true);
+                        }
+                    });
                 }
 
                 // Collect all elements with focus, active and checked pseudo-classes.
                 if (/:(focus|active|checked)/g.test(selectorText)) {
-                    const   match = /(.+):(focus|active|checked)/g.exec(selectorText),
-                            element = document.querySelector((match as RegExpExecArray)[1]) as Element;
-                    this.mapActiveFocusedElements.set(element, true);
+                    const selectors = (selectorText as string).split(',');
+
+                    selectors.forEach(selector => {
+                        let match = /(.+):(focus|active|checked)/g.exec(selector.trim()),
+                            element = document.querySelector(
+                                concatValidSelector((match as RegExpExecArray)[0])
+                            ) as Element;
+
+                        if (element) {
+                            this.mapActiveFocusedElements.set(element, true);
+                        }
+                    });
                 }
             }
         }

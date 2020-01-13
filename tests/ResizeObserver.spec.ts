@@ -46,7 +46,9 @@ describe('ResizeObserver', () => {
             background: blue;
         }
 
-        #input input:focus ~ div {
+        #input input:focus ~ div,
+        #input input:focus:not(.abc) ~ div,
+        #input input:not(:focus) {
             width: 100px;
         }
 
@@ -93,7 +95,7 @@ describe('ResizeObserver', () => {
         }
     `;
 
-    beforeEach(done => {
+    beforeEach(() => {
         style = document.createElement('style');
         templateElement = document.createElement('div');
 
@@ -102,10 +104,9 @@ describe('ResizeObserver', () => {
 
         document.head.appendChild(style);
         document.body.appendChild(templateElement);
-        done();
     });
 
-    afterEach(done => {
+    afterEach(() => {
         if (resizeObserverOne) {
             resizeObserverOne.disconnect();
             resizeObserverOne = null;
@@ -119,7 +120,6 @@ describe('ResizeObserver', () => {
 
         document.head.removeChild(style);
         document.body.removeChild(templateElement);
-        done();
     });
 
     describe('constructor', () => {
