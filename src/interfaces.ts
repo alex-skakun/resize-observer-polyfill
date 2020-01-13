@@ -6,7 +6,7 @@ export interface BoxSize {
 }
 
 export interface Constructable<T> {
-    new(): T;
+    new(callback: ResizeObserverCallback): T;
 }
 
 export interface ResizeObserverEntry {
@@ -39,3 +39,5 @@ export interface ElementData {
 export interface AnimationState {
     animationPlaying: boolean;
 }
+
+export type ResizeObserverCallback = (entries: Array<ResizeObserverEntry>) => void;

@@ -1,12 +1,12 @@
-import { ResizeObserverEntry, ResizeObserverOptions } from "./interfaces";
+import { ResizeObserverEntry, ResizeObserverOptions, ResizeObserverCallback } from "./interfaces";
 import { ResizeWatcher } from './resize-watcher';
 import { isFunction, isElement } from './helpers/helpers';
 
 export default class ResizeObserver {
-    private readonly callback: (entries: Array<ResizeObserverEntry>) => void;
+    private readonly callback: ResizeObserverCallback;
     private resizeWatcher: ResizeWatcher;
 
-    constructor (callback: (entries: Array<ResizeObserverEntry>) => void) {
+    constructor (callback: ResizeObserverCallback) {
         if (typeof callback === 'undefined') {
             throw new Error(`Failed to construct 'ResizeObserver': 1 argument required, but only 0 present.`);
         }
