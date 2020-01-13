@@ -15,19 +15,23 @@ export function concatValidSelector (selector: string): string {
         splittedSelector = tempSelector.split(':');
 
     splittedSelector.forEach((peace, index) => {
-        let peaceWithColon = index ? `:${peace}` : peace,
-            previousPeace = splittedSelector[index - 1];
-        if (
-            !(
-                /:(after|before|first-letter|first-line|hover|focus|checked|disabled|active|empty|enabled|valid|in-valid)/
-                .test(peaceWithColon)
-            )
-        ) {
-            validSelector += peaceWithColon;
+        if (!index) {
+            validSelector += peace;
+            return;
         }
+
+        let peaceWithColon = `:${peace}`,
+            previousPeace = splittedSelector[index - 1],
+            isValid = /:(empty|not|last-child|last-of-type|nth-child|nth-last-child|nth-last-of-type|nth-of-type|only-of-type|only-child)/
+                        .test(peaceWithColon);
 
         if (previousPeace && previousPeace[previousPeace.length - 1] === '(') {
             validSelector += peaceWithColon[peaceWithColon.length - 1] !== ')' ? `${peaceWithColon})` : peaceWithColon;
+            return;
+        }
+
+        if (isValid) {
+            validSelector += peaceWithColon;
         }
     });
 

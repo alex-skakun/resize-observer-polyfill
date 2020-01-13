@@ -32,10 +32,13 @@ describe('helpers functions', () => {
             expect(concatValidSelector('#input input:checked')).toEqual('#input input');
             expect(concatValidSelector('#input input:focus')).toEqual('#input input');
             expect(concatValidSelector('#input input:focus:not(.a)')).toEqual('#input input:not(.a)');
+            expect(concatValidSelector('#input input:focus:not([data-attribute]="abc")'))
+            .toEqual('#input input:not([data-attribute]="abc")');
             expect(concatValidSelector('#input input:focus:not(.a):after')).toEqual('#input input:not(.a)');
             expect(concatValidSelector('#input input:focus:not(:focus):after')).toEqual('#input input:not(:focus)');
             expect(concatValidSelector('.was-validated .custom-control-input:valid:focus:not(:checked)'))
             .toEqual('.was-validated .custom-control-input:not(:checked)');
+            expect(concatValidSelector('.custom-range:-webkit-slider-thumb')).toEqual('.custom-range');
         });
     });
 });
