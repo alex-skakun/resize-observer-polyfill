@@ -426,7 +426,10 @@ export class ResizeWatcher {
     private getSumOfProperties (properties: Array<string>, computedStyles: CSSStyleDeclaration): number {
         let sum = 0;
         properties.forEach(property => {
-            sum += parseFloat(computedStyles[property]);
+            let style = computedStyles[property];
+            if (style) {
+                sum += parseFloat(style);
+            }
         });
         return sum;
     }
