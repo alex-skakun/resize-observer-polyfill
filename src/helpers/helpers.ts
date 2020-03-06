@@ -26,7 +26,7 @@ export function concatValidSelector (selector: string): string {
                         .test(peaceWithColon);
 
         if (previousPeace && previousPeace[previousPeace.length - 1] === '(') {
-            validSelector += peaceWithColon[peaceWithColon.length - 1] !== ')' ? `${peaceWithColon})` : peaceWithColon;
+            validSelector += !peaceWithColon.includes(')') ? `${peaceWithColon})` : peaceWithColon;
             return;
         }
 
