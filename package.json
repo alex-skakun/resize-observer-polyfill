@@ -1,6 +1,6 @@
 {
     "name": "polyfill-for-resize-observer",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "description": "Polyfill for ResizeObserver, that based on Mutation Observer and events.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
