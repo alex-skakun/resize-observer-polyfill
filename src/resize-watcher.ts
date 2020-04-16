@@ -70,6 +70,16 @@ let instance: ResizeWatcher;
 
 export class ResizeWatcher {
     /**
+     * FPS.
+     */
+    private fps = 1000 / 60;
+
+    /**
+     * Time for FPS.
+     */
+    private then: number = Date.now();
+
+    /**
      * ID of the requestAnimationFrame.
      */
     private requestID: number;
@@ -108,7 +118,7 @@ export class ResizeWatcher {
     /**
      * Map for elements, that currently animating.
      */
-    private mapAnimationProcessingElements = new Map<Element, boolean>();
+    private mapAnimationProcessingElements = new Map<Element, DOMRect>();
 
     /**
      * Map for elements, that currently has transition.
@@ -229,7 +239,7 @@ export class ResizeWatcher {
             && this.mapAnimationElements.get(target as Element)
             && getComputedStyle(target as Element).animationPlayState === 'running'
         ) {
-            this.mapAnimationProcessingElements.set(target as Element, true);
+            this.mapAnimationProcessingElements.set(target as Element, (target as Element).getBoundingClientRect());
             this.start();
         }
     }
@@ -237,8 +247,23 @@ export class ResizeWatcher {
     /**
      * Resize cb.
      */
-
     private resizeCb = () => this.checkForUpdate();
+
+    private hasElementsInDom = (map: Map<Element, DOMRect>) => {
+        let keys = map.keys();
+        for (let key of keys) {
+            let rect = key.getBoundingClientRect(),
+                isIndentical = JSON.stringify(map.get(key)) === JSON.stringify(rect);
+
+            if (!document.body.contains(key) || isIndentical) {
+                map.delete(key);
+            }
+
+            if (!isIndentical) {
+                map.set(key, rect);
+            }
+        }
+    };
 
     constructor () {
         // this is for singleton
@@ -311,7 +336,7 @@ export class ResizeWatcher {
      */
     private start (): void {
         this.stop();
-
+        this.then = Date.now();
         this.requestID = requestAnimationFrame(this.watchElements);
     }
 
@@ -438,6 +463,15 @@ export class ResizeWatcher {
      * Method, that check elements for their cahnges.
      */
     private checkForUpdate (): void {
+        let now = Date.now();
+
+        if (this.then && now - this.then <= this.fps) {
+            return;
+        }
+
+        this.then = now;
+        this.hasElementsInDom(this.mapAnimationProcessingElements);
+
         let currentRects = new Map<Element | SVGElement, ElementData>(),
             instancesMap = new Map<ResizeObserver, Array<ResizeObserverEntry>>();
 
@@ -564,6 +598,43 @@ export class ResizeWatcher {
             return false;
         };
 
+        const parseStyle = (cssRule: any) => {
+            let { style, selectorText } = cssRule;
+            // We can't collect animations right away, because we should iterate over animations,
+            // that will be collected into the keyframesRules map after cycle will finish.
+            if (cssRule instanceof CSSStyleRule && style.animation) {
+                animationsRules.push(cssRule);
+            }
+            // But we can collect all elements with ttransitions,
+            // that pass this condition, right away in the transition map.
+            if (cssRule instanceof CSSStyleRule && style.transition && isTransitionHasResizeProperty(style)) {
+                const element = document.querySelector(selectorText);
+                this.mapTransitionElements.set(element, true);
+            }
+            // Collect all elements with hover.
+            if (/:hover/g.test(selectorText)) {
+                const selectors = selectorText.split(',') as Array<string>;
+                selectors.forEach(selector => {
+                    let match = /(.+):hover/g.exec(selector.trim()),
+                        element = match ? document.querySelector(concatValidSelector(match[0])) : null;
+                    if (element) {
+                        this.mapHoverElements.set(element, true);
+                    }
+                });
+            }
+            // Collect all elements with focus, active and checked pseudo-classes.
+            if (/:(focus|active|checked)/g.test(selectorText)) {
+                const selectors = selectorText.split(',') as Array<string>;
+                selectors.forEach(selector => {
+                    let match = /(.+):(focus|active|checked)/g.exec(selector.trim()),
+                        element = match ? document.querySelector(concatValidSelector(match[0])) : null;
+                    if (element) {
+                        this.mapActiveFocusedElements.set(element, true);
+                    }
+                });
+            }
+        }
+
         /**
          * Iterate over styleSheets to find all elements with transition and animation.
          */
@@ -575,52 +646,14 @@ export class ResizeWatcher {
                     continue;
                 }
 
-                let { style, selectorText } = cssRule;
-
-                // We can't collect animations right away, because we should iterate over animations,
-                // that will be collected into the keyframesRules map after cycle will finish.
-                if (cssRule instanceof CSSStyleRule && style.animation) {
-                    animationsRules.push(cssRule);
+                if (cssRule instanceof CSSMediaRule) {
+                    for (let mediaRule of cssRule.cssRules) {
+                        parseStyle(mediaRule);
+                    }
+                    continue;
                 }
 
-                // But we can collect all elements with ttransitions,
-                // that pass this condition, right away in the transition map.
-                if (cssRule instanceof CSSStyleRule && style.transition && isTransitionHasResizeProperty(style)) {
-                    const element = document.querySelector(selectorText);
-                    this.mapTransitionElements.set(element, true);
-                }
-
-                // Collect all elements with hover.
-                if (/:hover/g.test(selectorText)) {
-                    const selectors = (selectorText as string).split(',');
-
-                    selectors.forEach(selector => {
-                        let match = /(.+):hover/g.exec(selector.trim()),
-                            element = match ? document.querySelector(
-                                concatValidSelector((match as RegExpExecArray)[0])
-                            ) as Element : null;
-
-                        if (element) {
-                            this.mapHoverElements.set(element, true);
-                        }
-                    });
-                }
-
-                // Collect all elements with focus, active and checked pseudo-classes.
-                if (/:(focus|active|checked)/g.test(selectorText)) {
-                    const selectors = (selectorText as string).split(',');
-
-                    selectors.forEach(selector => {
-                        let match = /(.+):(focus|active|checked)/g.exec(selector.trim()),
-                            element = match ? document.querySelector(
-                                concatValidSelector((match as RegExpExecArray)[0])
-                            ) as Element : null;
-
-                        if (element) {
-                            this.mapActiveFocusedElements.set(element, true);
-                        }
-                    });
-                }
+                parseStyle(cssRule);
             }
         }
 
@@ -646,8 +679,7 @@ export class ResizeWatcher {
         const config = {
             attributes: true,
             childList: true,
-            subtree: true,
-            characterData: true
+            subtree: true
         };
 
         const callback = (mutationsList: Array<MutationRecord>) =>  {
@@ -661,7 +693,7 @@ export class ResizeWatcher {
                     const computedStyle = getComputedStyle((mutation.target as HTMLElement));
                     if (computedStyle.animationPlayState === 'running') {
                         isAnimationTargetExist = true;
-                        this.mapAnimationProcessingElements.set(mutation.target as Element, true);
+                        this.mapAnimationProcessingElements.set(mutation.target as Element, (mutation.target as Element).getBoundingClientRect());
                     } else {
                         this.mapAnimationProcessingElements.delete(mutation.target as Element);
                     }
@@ -770,5 +802,4 @@ export class ResizeWatcher {
         this.mapTransitionElements.clear();
         this.mapTransitionProcessingElements.clear();
     }
-
 }
